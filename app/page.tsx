@@ -83,6 +83,5 @@ function CalculatorCard(props: {
       </div>
     </div>
   );
-تست گیت‌هاب دسکتاپ
 
 }
