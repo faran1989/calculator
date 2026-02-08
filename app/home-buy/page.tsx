@@ -984,7 +984,7 @@ function FieldMoney(props: {
   border: string;
   text: string;
   muted: string;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   const { label, placeholder, helper, helper2, value, onChange, onBlur, inputBg, border, text, muted, inputRef } =
     props;
