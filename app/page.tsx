@@ -40,9 +40,10 @@ export default function HomePage() {
         </section>
 
         {/* Footer note */}
-        <p className="mt-8 text-center text-xs text-zinc-500 leading-5">
-  این پروژه مرحله‌ای توسعه داده می‌شود. <span className="font-bold">[TEST]</span>
+       <p className="mt-8 text-center text-xs text-zinc-500 leading-5">
+  این پروژه مرحله‌ای توسعه داده می‌شود.
 </p>
+
 
       </div>
     </main>
