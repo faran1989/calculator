@@ -41,7 +41,7 @@ export default function HomePage() {
 
         {/* Footer note */}
         <p className="mt-8 text-center text-xs text-zinc-500 leading-5">
-          این پروژه مرحله‌ای توسعه داده می‌شود و اولویت با تجربه موبایل است.
+          این پروژه مرحله‌ای توسعه داده می‌شود.
         </p>
       </div>
     </main>
