@@ -340,7 +340,7 @@ export default function BuyHouseCalculatorPage() {
   const [toast, setToast] = useState<string>('');
 
   const topRef = useRef<HTMLDivElement | null>(null);
-  const priceInputRef = useRef<HTMLInputElement | null>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
 
   const parsed = useMemo(() => {
     const P = toNumber(inputs.price);
