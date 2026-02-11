@@ -8,6 +8,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ToolHeader from '../../components/ToolHeader';
 import { Home } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
   weight: ['400', '600', '700', '800', '900'],
