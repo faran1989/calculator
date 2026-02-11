@@ -569,7 +569,7 @@ const sp = useMemo(() => new URLSearchParams(searchParams.toString()), [searchPa
     didInitFromUrl.current = true;
 
     try {
-      const fromUrl = parseInputsFromSearchParams(searchParams);
+      const fromUrl = parseInputsFromSearchParams(sp);
       if (Object.keys(fromUrl).length > 0) {
         setInputs((prev) => ({ ...prev, ...fromUrl }));
       }
@@ -1440,7 +1440,7 @@ function FieldMoney(props: {
   border: string;
   text: string;
   muted: string;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.Ref<HTMLInputElement>;
 }) {
   const { id, label, placeholder, helper, helper2, value, onChange, onBlur, inputBg, border, text, muted, inputRef } =
     props;
