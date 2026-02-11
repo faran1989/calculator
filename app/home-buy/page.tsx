@@ -1731,7 +1731,6 @@ function Td(props: { children: React.ReactNode; border: string }) {
     </td>
   );
 }
-function BuyHouseCalculatorInner() {
   return (
     <Suspense fallback={null}>
       <BuyHouseCalculatorInner />
