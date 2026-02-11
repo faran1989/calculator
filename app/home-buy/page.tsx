@@ -9,7 +9,6 @@ import ToolHeader from '../../components/ToolHeader';
 import { Home } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
