@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Vazirmatn } from 'next/font/google';
 import Head from 'next/head';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -541,7 +541,7 @@ const PRESETS: Array<{
   },
 ];
 
-export default function BuyHouseCalculatorPage() {
+function BuyHouseCalculatorInner() {
   const IS_DEV = process.env.NODE_ENV !== 'production';
 
   const router = useRouter();
@@ -1729,6 +1729,13 @@ function Td(props: { children: React.ReactNode; border: string }) {
     >
       {props.children}
     </td>
+  );
+}
+function BuyHouseCalculatorInner() {
+  return (
+    <Suspense fallback={null}>
+      <BuyHouseCalculatorInner />
+    </Suspense>
   );
 }
 
