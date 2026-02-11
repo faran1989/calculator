@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`home-buy logic: URL share (querystring) > snapshot: buildShareQuery (stable query format) 1`] = `"?p=5000000000&s0=100000000&m0=20000000&r=80&inf=base&sav=value&g=10"`;
+
+exports[`home-buy logic: display rules > snapshot: formatResultFromMonths (key cases) 1`] = `
+{
+  "m1": "حدود ۱ ماه",
+  "m11": "حدود ۱۱ ماه",
+  "now": "همین الان",
+  "veryLong": "با این فرض‌ها، زمان خرید خانه بسیار طولانی است.",
+  "y12": "حدود ۱ سال",
+  "y13": "حدود ۲ سال",
+}
+`;
