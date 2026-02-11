@@ -185,7 +185,7 @@ function sanitizeNumericString(raw: string, opts?: { allowMinus?: boolean }): st
   return cleaned;
 }
 
-function parseInputsFromSearchParams(sp: ReadonlyURLSearchParams): Partial<Inputs> {
+function parseInputsFromSearchParams(sp: URLSearchParams): Partial<Inputs> {
   const out: Partial<Inputs> = {};
 
   const inflationScenario = sp.get('inf');
@@ -546,6 +546,7 @@ export default function BuyHouseCalculatorPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const didInitFromUrl = useRef(false);
+const sp = useMemo(() => new URLSearchParams(searchParams.toString()), [searchParams]);
 
   const [showEdgeCases, setShowEdgeCases] = useState<boolean>(IS_DEV);
 
