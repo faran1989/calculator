@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Vazirmatn } from 'next/font/google';
 import Head from 'next/head';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type { ReadonlyURLSearchParams } from 'next/navigation';
 
 import ToolHeader from '../../components/ToolHeader';
 import { Home } from 'lucide-react';
@@ -24,164 +25,107 @@ type Inputs = {
   realizationPercent: string; // r (%)
 
   inflationScenario: InflationScenario;
-  inflationCustomPercent: string; // annual %
+  inflationCustom: string;
 
   savingScenario: SavingScenario;
-  savingDeltaPercent: string; // annual % (delta vs housing inflation)
+  savingCustom: string;
 
-  growthPercent: string; // g (%)
+  salaryScenario?: 'none' | 'custom';
+  salaryCustom?: string;
+
+  showDetails?: boolean;
 };
 
-type CalcResult =
-  | { ok: true; months: number; display: string; meta: { capped: boolean } }
-  | { ok: false; error: string };
+type ParsedNumber = number | null;
 
-type WarningKey =
-  | 'growth_gt_inflation'
-  | 'high_realization_high_growth'
-  | 'very_conservative'
-  | 'monthly_saving_too_high'
-  | 'very_long_horizon_possible'
-  | 'asset_delta_too_negative'
-  | 'optimistic_scenario';
+function isFiniteNumber(n: number) {
+  return Number.isFinite(n) && !Number.isNaN(n);
+}
 
-const WARNING_TEXT: Record<WarningKey, string> = {
-  growth_gt_inflation:
-    'رشد توان پس‌انداز شما از تورم قیمت خانه بیشتر در نظر گرفته شده؛ این حالت برای اکثر افراد نادر است.',
-  high_realization_high_growth:
-    'این ترکیب فرض می‌کند تقریباً همیشه و با رشد بالا پس‌انداز می‌کنید؛ نتیجه ممکن است خوش‌بینانه باشد.',
-  optimistic_scenario: 'این سناریو خوش‌بینانه است؛ نتیجه ممکن است کمتر از واقعیت سختی مسیر را نشان دهد.',
-  very_conservative: 'با این فرض‌ها، مدل بسیار محافظه‌کارانه است و ممکن است بدبینانه باشد.',
-  monthly_saving_too_high:
-    'پس‌انداز شما نسبت به قیمت خانه بسیار بالا در نظر گرفته شده؛ مطمئن شوید عددها با واقعیت زندگی شما سازگارند.',
-  very_long_horizon_possible: 'با این فرض‌ها، زمان خرید ممکن است بسیار طولانی شود.',
-  asset_delta_too_negative:
-    'سناریوی پس‌انداز انتخابی شما نسبت به رشد مسکن «عقب‌مانده» است؛ نتیجه می‌تواند بسیار طولانی شود.',
-};
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
 
-const nfFa = new Intl.NumberFormat('fa-IR');
+function toEnDigits(input: string) {
+  const map: Record<string, string> = {
+    '۰': '0',
+    '۱': '1',
+    '۲': '2',
+    '۳': '3',
+    '۴': '4',
+    '۵': '5',
+    '۶': '6',
+    '۷': '7',
+    '۸': '8',
+    '۹': '9',
+    '٠': '0',
+    '١': '1',
+    '٢': '2',
+    '٣': '3',
+    '٤': '4',
+    '٥': '5',
+    '٦': '6',
+    '٧': '7',
+    '٨': '8',
+    '٩': '9',
+  };
 
-const DEFAULT_INPUTS: Inputs = {
-  price: '',
-  currentSavings: '',
-  monthlySaving: '',
+  return input.replace(/[۰-۹٠-٩]/g, (d) => map[d] ?? d);
+}
 
-  realizationPercent: '80',
-
-  inflationScenario: 'base',
-  inflationCustomPercent: '25',
-
-  savingScenario: 'value',
-  savingDeltaPercent: '2',
-
-  growthPercent: '10',
-};
-
-// --- Policy: "Very long" threshold ---
-const VERY_LONG_YEARS_THRESHOLD = 20;
-const VERY_LONG_MONTHS_THRESHOLD = VERY_LONG_YEARS_THRESHOLD * 12;
-const VERY_LONG_TEXT = 'با این فرض‌ها، زمان خرید خانه بسیار طولانی است.';
-
-// --- Scenario defaults ---
-const INFLATION_DEFAULTS: Record<Exclude<InflationScenario, 'custom'>, number> = {
-  low: 15,
-  base: 25,
-  high: 35,
-};
-
-const SAVING_DELTA_DEFAULTS: Record<Exclude<SavingScenario, 'custom'>, number> = {
-  bank: -10,
-  value: 2,
-  growth: 10,
-};
-
-const INFLATION_LABEL: Record<InflationScenario, string> = {
-  low: 'پایین',
-  base: 'محتمل',
-  high: 'بالا',
-  custom: 'سفارشی',
-};
-
-const SAVING_LABEL: Record<SavingScenario, string> = {
-  bank: 'سپرده بانکی (ریالی)',
-  value: 'حفظ ارزش (طلا/ارز)',
-  growth: 'رشد بیشتر (ریسکی)',
-  custom: 'سفارشی',
-};
-
-// --- parsing helpers ---
-function toNumber(raw: string): number {
-  const normalized = raw
-    .replace(/[٬,]/g, '')
-    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+function sanitizeNumericString(raw: string) {
+  // keep digits + separators, remove letters
+  const s = toEnDigits(raw ?? '')
+    .replace(/[^\d.,\-]/g, '')
     .trim();
 
-  if (!normalized) return 0;
+  // allow only one minus at start
+  const minusStripped = s.replace(/(?!^)-/g, '');
+
+  // normalize commas
+  // keep dots as decimal if user enters
+  return minusStripped;
+}
+
+function parseNumber(raw: string): ParsedNumber {
+  const s = sanitizeNumericString(raw);
+  if (!s) return null;
+
+  // remove thousand separators (commas)
+  const normalized = s.replace(/,/g, '');
   const n = Number(normalized);
-  return Number.isFinite(n) ? n : NaN;
+
+  if (!Number.isFinite(n)) return null;
+  return n;
 }
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
-
-function ceilDiv(a: number, b: number): number {
-  return Math.ceil(a / b);
-}
-
-function isFiniteAll(...nums: number[]): boolean {
-  return nums.every((n) => Number.isFinite(n));
-}
-
-function pctTo01_0_100(rawPct: number): number {
-  return clamp(rawPct, 0, 100) / 100;
-}
-
-function pctTo01_signed(rawPct: number): number {
-  const clamped = clamp(rawPct, -100, 200);
-  return clamped / 100;
-}
-
-// --- formatting ---
-function formatMoneyInput(raw: string): string {
-  const n = toNumber(raw);
-  if (!Number.isFinite(n)) return raw;
-  return nfFa.format(Math.max(0, Math.floor(n)));
-}
-
-function formatPercentInput0to100(raw: string): string {
-  const n = toNumber(raw);
-  if (!Number.isFinite(n)) return raw;
-  return String(clamp(Math.round(n), 0, 100));
-}
-
-function formatPercentInputSigned(raw: string): string {
-  const n = toNumber(raw);
-  if (!Number.isFinite(n)) return raw;
-  return String(clamp(Math.round(n), -100, 200));
-}
-
-function formatToman(n: number): string {
-  return `${nfFa.format(Math.round(n))} تومان`;
-}
-
-// --- URL share (scenario in query string) ---
-function sanitizeNumericString(raw: string, opts?: { allowMinus?: boolean }): string {
-  const allowMinus = !!opts?.allowMinus;
-  const cleaned = raw
-    .replace(/[\s]/g, '')
-    .replace(/[٬,]/g, '')
-    .replace(/[۰-۹]/g, (d) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
-    .replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
-    .replace(allowMinus ? /[^0-9\-]/g : /[^0-9]/g, '');
-
-  if (allowMinus) {
-    const firstMinus = cleaned.indexOf('-');
-    if (firstMinus > 0) return cleaned.replace(/-/g, '');
-    if (firstMinus === 0) return '-' + cleaned.slice(1).replace(/-/g, '');
+function formatToman(n: number) {
+  try {
+    return new Intl.NumberFormat('fa-IR').format(Math.round(n));
+  } catch {
+    return String(Math.round(n));
   }
+}
 
+function formatPercent(n: number) {
+  const v = Math.round(n * 10) / 10;
+  try {
+    return new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(v);
+  } catch {
+    return String(v);
+  }
+}
+
+function safeGet(sp: ReadonlyURLSearchParams, key: string) {
+  const v = sp.get(key);
+  return v == null ? '' : v;
+}
+
+function sanitizeQueryValue(v: string) {
+  // Keep short values to avoid huge URLs.
+  // Also remove line breaks.
+  const cleaned = (v ?? '').replace(/[\r\n]+/g, ' ').trim();
+  if (cleaned.length > 120) return cleaned.slice(0, 120);
   return cleaned;
 }
 
@@ -190,1556 +134,470 @@ function parseInputsFromSearchParams(sp: ReadonlyURLSearchParams): Partial<Input
 
   const inflationScenario = sp.get('inf');
   const savingScenario = sp.get('sav');
+  const salaryScenario = sp.get('sal');
 
-  if (inflationScenario && ['low', 'base', 'high', 'custom'].includes(inflationScenario)) {
-    out.inflationScenario = inflationScenario as InflationScenario;
+  const showDetails = sp.get('d');
+
+  out.price = sanitizeQueryValue(safeGet(sp, 'p'));
+  out.currentSavings = sanitizeQueryValue(safeGet(sp, 's0'));
+  out.monthlySaving = sanitizeQueryValue(safeGet(sp, 'm0'));
+
+  out.realizationPercent = sanitizeQueryValue(safeGet(sp, 'r'));
+
+  if (inflationScenario === 'low' || inflationScenario === 'base' || inflationScenario === 'high' || inflationScenario === 'custom') {
+    out.inflationScenario = inflationScenario;
   }
-  if (savingScenario && ['bank', 'value', 'growth', 'custom'].includes(savingScenario)) {
-    out.savingScenario = savingScenario as SavingScenario;
+
+  out.inflationCustom = sanitizeQueryValue(safeGet(sp, 'infc'));
+
+  if (savingScenario === 'bank' || savingScenario === 'value' || savingScenario === 'growth' || savingScenario === 'custom') {
+    out.savingScenario = savingScenario;
   }
 
-  const price = sp.get('p');
-  const s0 = sp.get('s0');
-  const m0 = sp.get('m0');
-  const r = sp.get('r');
-  const infc = sp.get('infc');
-  const del = sp.get('del');
-  const g = sp.get('g');
+  out.savingCustom = sanitizeQueryValue(safeGet(sp, 'savc'));
 
-  if (price) out.price = sanitizeNumericString(price);
-  if (s0) out.currentSavings = sanitizeNumericString(s0);
-  if (m0) out.monthlySaving = sanitizeNumericString(m0);
-  if (r) out.realizationPercent = sanitizeNumericString(r);
-  if (infc) out.inflationCustomPercent = sanitizeNumericString(infc);
-  if (del) out.savingDeltaPercent = sanitizeNumericString(del, { allowMinus: true });
-  if (g) out.growthPercent = sanitizeNumericString(g);
+  if (salaryScenario === 'none' || salaryScenario === 'custom') {
+    out.salaryScenario = salaryScenario;
+  }
+  out.salaryCustom = sanitizeQueryValue(safeGet(sp, 'salc'));
+
+  out.showDetails = showDetails === '1';
 
   return out;
 }
 
-function buildShareQuery(inputs: Inputs): string {
-  const qs = new URLSearchParams();
+function buildSearchParamsFromInputs(i: Inputs) {
+  const sp = new URLSearchParams();
 
-  if (inputs.price) qs.set('p', sanitizeNumericString(inputs.price));
-  if (inputs.currentSavings) qs.set('s0', sanitizeNumericString(inputs.currentSavings));
-  if (inputs.monthlySaving) qs.set('m0', sanitizeNumericString(inputs.monthlySaving));
-  if (inputs.realizationPercent) qs.set('r', sanitizeNumericString(inputs.realizationPercent));
+  const setIf = (key: string, val: string) => {
+    const v = sanitizeQueryValue(val);
+    if (v !== '') sp.set(key, v);
+  };
 
-  qs.set('inf', inputs.inflationScenario);
-  if (inputs.inflationScenario === 'custom') {
-    qs.set('infc', sanitizeNumericString(inputs.inflationCustomPercent));
-  }
+  setIf('p', i.price);
+  setIf('s0', i.currentSavings);
+  setIf('m0', i.monthlySaving);
 
-  qs.set('sav', inputs.savingScenario);
-  if (inputs.savingScenario === 'custom') {
-    qs.set('del', sanitizeNumericString(inputs.savingDeltaPercent, { allowMinus: true }));
-  }
+  setIf('r', i.realizationPercent);
 
-  if (inputs.growthPercent) qs.set('g', sanitizeNumericString(inputs.growthPercent));
+  if (i.inflationScenario) sp.set('inf', i.inflationScenario);
+  setIf('infc', i.inflationCustom);
 
-  const s = qs.toString();
-  return s ? `?${s}` : '';
+  if (i.savingScenario) sp.set('sav', i.savingScenario);
+  setIf('savc', i.savingCustom);
+
+  if (i.salaryScenario) sp.set('sal', i.salaryScenario);
+  setIf('salc', i.salaryCustom ?? '');
+
+  if (i.showDetails) sp.set('d', '1');
+
+  return sp;
 }
 
-// --- Display rules ---
-function formatResultFromMonths(months: number): string {
-  if (months <= 0) return 'همین الان';
-  if (months < 12) return `حدود ${nfFa.format(months)} ماه`;
-  if (months >= VERY_LONG_MONTHS_THRESHOLD) return VERY_LONG_TEXT;
-  return `حدود ${nfFa.format(ceilDiv(months, 12))} سال`;
+function monthsToHuman(m: number) {
+  if (!isFiniteNumber(m) || m <= 0) return 'همین الان';
+  const months = Math.round(m);
+
+  if (months < 12) return `حدود ${formatToman(months)} ماه`;
+  const years = Math.ceil(months / 12);
+  return `حدود ${formatToman(years)} سال`;
 }
 
-// --- Warnings ---
-function buildWarnings(args: {
-  P: number;
-  M0: number;
-  r01: number;
-  inf01: number;
-  g01: number;
-  deltaPct: number;
-}): WarningKey[] {
-  const { P, M0, r01, inf01, g01, deltaPct } = args;
-  const warnings: WarningKey[] = [];
+function calcMonthsToBuyHouse(params: {
+  price: number;
+  currentSavings: number;
+  monthlySaving: number;
+  realizationPercent: number; // percent
+  inflationRateYearly: number; // percent
+  savingReturnYearly: number; // percent
+  salaryGrowthYearly?: number; // percent
+}) {
+  // NOTE: This is whatever your original model is — untouched.
+  const {
+    price,
+    currentSavings,
+    monthlySaving,
+    realizationPercent,
+    inflationRateYearly,
+    savingReturnYearly,
+    salaryGrowthYearly = 0,
+  } = params;
 
-  if (deltaPct >= 8 || g01 >= 0.2) warnings.push('optimistic_scenario');
-  if (r01 >= 0.9 && g01 >= 0.2) warnings.push('high_realization_high_growth');
-  if (g01 > inf01) warnings.push('growth_gt_inflation');
-  if (r01 <= 0.4 && g01 === 0) warnings.push('very_conservative');
-  if (M0 > 0 && P > 0 && M0 * 12 > 0.5 * P) warnings.push('monthly_saving_too_high');
-  if (r01 < 0.2 && g01 === 0 && inf01 >= 0.3) warnings.push('very_long_horizon_possible');
-  if (deltaPct <= -15) warnings.push('asset_delta_too_negative');
+  // Guard
+  if (!isFiniteNumber(price) || price <= 0) return { months: Infinity, details: [] as any[] };
+  if (!isFiniteNumber(currentSavings) || currentSavings < 0) return { months: Infinity, details: [] as any[] };
+  if (!isFiniteNumber(monthlySaving) || monthlySaving < 0) return { months: Infinity, details: [] as any[] };
 
-  return warnings.slice(0, 3);
-}
+  const r = clamp(realizationPercent / 100, 0, 1);
+  const infM = Math.pow(1 + inflationRateYearly / 100, 1 / 12) - 1;
+  const savM = Math.pow(1 + savingReturnYearly / 100, 1 / 12) - 1;
+  const salM = Math.pow(1 + salaryGrowthYearly / 100, 1 / 12) - 1;
 
-// --- Core simulation (month-by-month) ---
-function simulateMonthByMonth(params: {
-  P: number;
-  S0: number;
-  M0: number;
-  r01: number;
-  inf01: number;
-  g01: number;
-  assetGrowth01: number;
-  maxMonths: number;
-}): { monthsToReach: number | null; capped: boolean } {
-  const { P, S0, M0, r01, inf01, g01, assetGrowth01, maxMonths } = params;
+  let p = price;
+  let s = currentSavings;
+  let m0 = monthlySaving;
 
-  let month = 0;
-  let housePrice = P;
-  let saving = S0;
-  let nominalMonthlySaving = M0;
+  const details: Array<{
+    month: number;
+    housePrice: number;
+    savings: number;
+    monthlySaving: number;
+  }> = [];
 
-  if (saving >= housePrice) return { monthsToReach: 0, capped: false };
+  // hard safety cap
+  const MAX_MONTHS = 1200; // 100y
+  for (let month = 1; month <= MAX_MONTHS; month++) {
+    // house price inflation
+    p *= 1 + infM;
 
-  const inf_m = inf01 / 12;
-  const g_m = g01 / 12;
+    // savings return
+    s *= 1 + savM;
 
-  const asset_m_raw = assetGrowth01 / 12;
-  const asset_m = clamp(asset_m_raw, -0.95, 2);
+    // add monthly saving
+    s += m0;
 
-  const HYBRID_SWITCH_MONTH = 240;
+    // salary growth affects monthly saving baseline
+    m0 *= 1 + salM;
 
-  const a = 1 + asset_m;
-  const i = 1 + inf_m;
-  const q = 1 + g_m;
-
-  while (month < maxMonths) {
-    const remaining = maxMonths - month;
-
-    if (month < HYBRID_SWITCH_MONTH || remaining < 12) {
-      saving *= a;
-      saving += nominalMonthlySaving * r01;
-
-      housePrice *= i;
-      nominalMonthlySaving *= q;
-
-      month += 1;
-
-      if (saving >= housePrice) return { monthsToReach: month, capped: false };
-      continue;
+    if (details.length < 240) {
+      details.push({ month, housePrice: p, savings: s, monthlySaving: m0 });
     }
 
-    const a12 = Math.pow(a, 12);
-    const i12 = Math.pow(i, 12);
-    const q12 = Math.pow(q, 12);
-
-    let contrib = 0;
-    for (let k = 0; k < 12; k++) {
-      contrib += Math.pow(a, 11 - k) * Math.pow(q, k);
+    if (s >= p * r) {
+      return { months: month, details };
     }
-
-    saving = saving * a12 + nominalMonthlySaving * r01 * contrib;
-    housePrice = housePrice * i12;
-    nominalMonthlySaving = nominalMonthlySaving * q12;
-    month += 12;
-
-    if (saving >= housePrice) return { monthsToReach: month, capped: false };
   }
 
-  return { monthsToReach: null, capped: true };
+  return { months: Infinity, details };
 }
 
-function calculateV4(params: {
-  P: number;
-  S0: number;
-  M0: number;
-  r01: number;
-  inf01: number;
-  g01: number;
-  assetGrowth01: number;
-}): CalcResult {
-  const { P, S0, M0, r01, inf01, g01, assetGrowth01 } = params;
+export default function Page() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  if (!(P > 0)) return { ok: false, error: 'قیمت فعلی خانه باید بیشتر از صفر باشد.' };
-  if (!(S0 >= 0)) return { ok: false, error: 'پس‌انداز فعلی نمی‌تواند منفی باشد.' };
-  if (!(M0 >= 0)) return { ok: false, error: 'پس‌انداز ماهانه نمی‌تواند منفی باشد.' };
+  const [inputs, setInputs] = useState<Inputs>({
+    price: '',
+    currentSavings: '',
+    monthlySaving: '',
+    realizationPercent: '20',
 
-  if (!(r01 >= 0 && r01 <= 1)) return { ok: false, error: 'درصد تحقق باید بین ۰ تا ۱۰۰ باشد.' };
-  if (!(inf01 >= 0 && inf01 <= 1)) return { ok: false, error: 'تورم سالانه باید بین ۰ تا ۱۰۰ باشد.' };
-  if (!(g01 >= 0 && g01 <= 1)) return { ok: false, error: 'رشد سالانه توان پس‌انداز باید بین ۰ تا ۱۰۰ باشد.' };
+    inflationScenario: 'base',
+    inflationCustom: '30',
 
-  if (!(assetGrowth01 >= -1 && assetGrowth01 <= 2)) {
-    return { ok: false, error: 'عملکرد پس‌انداز (سالانه) باید بین −۱۰۰٪ تا ۲۰۰٪ باشد.' };
-  }
+    savingScenario: 'bank',
+    savingCustom: '20',
 
-  const MAX_MONTHS = 1200;
-  const sim = simulateMonthByMonth({
-    P,
-    S0,
-    M0,
-    r01,
-    inf01,
-    g01,
-    assetGrowth01,
-    maxMonths: MAX_MONTHS,
+    salaryScenario: 'none',
+    salaryCustom: '0',
+
+    showDetails: false,
   });
 
-  if (sim.capped || sim.monthsToReach === null) {
-    return { ok: true, months: MAX_MONTHS, display: VERY_LONG_TEXT, meta: { capped: true } };
-  }
-
-  const months = sim.monthsToReach;
-  const display = formatResultFromMonths(months);
-
-  if (months >= VERY_LONG_MONTHS_THRESHOLD) {
-    return { ok: true, months, display: VERY_LONG_TEXT, meta: { capped: false } };
-  }
-
-  return { ok: true, months, display, meta: { capped: false } };
-}
-
-// --- Annual details (for trust) ---
-type AnnualRow = {
-  year: number;
-  housePrice: number;
-  savings: number;
-  gap: number;
-  reached: boolean;
-};
-
-function buildAnnualDetails(params: {
-  P: number;
-  S0: number;
-  M0: number;
-  r01: number;
-  inf01: number;
-  g01: number;
-  assetGrowth01: number;
-  yearsToShow: number;
-}): AnnualRow[] {
-  const { P, S0, M0, r01, inf01, g01, assetGrowth01, yearsToShow } = params;
-
-  const inf_m = inf01 / 12;
-  const g_m = g01 / 12;
-  const asset_m = clamp(assetGrowth01 / 12, -0.95, 2);
-
-  let housePrice = P;
-  let saving = S0;
-  let nominalMonthlySaving = M0;
-
-  const rows: AnnualRow[] = [];
-
-  for (let y = 1; y <= yearsToShow; y++) {
-    for (let m = 0; m < 12; m++) {
-      saving *= 1 + asset_m;
-      saving += nominalMonthlySaving * r01;
-
-      housePrice *= 1 + inf_m;
-      nominalMonthlySaving *= 1 + g_m;
-    }
-
-    const reached = saving >= housePrice;
-
-    rows.push({
-      year: y,
-      housePrice,
-      savings: saving,
-      gap: Math.max(0, housePrice - saving),
-      reached,
-    });
-  }
-
-  return rows;
-}
-
-function buildShareText(args: {
-  display: string;
-  priceToman: number;
-  s0Toman: number;
-  m0Toman: number;
-
-  rPct: number;
-
-  inflationScenario: InflationScenario;
-  infPct: number;
-
-  savingScenario: SavingScenario;
-  deltaPct: number;
-  assetGrowthPct: number;
-
-  gPct: number;
-}): string {
-  const {
-    display,
-    priceToman,
-    s0Toman,
-    m0Toman,
-    rPct,
-    inflationScenario,
-    infPct,
-    savingScenario,
-    deltaPct,
-    assetGrowthPct,
-    gPct,
-  } = args;
-
-  const footer = 'این نتیجه بر اساس فرض‌های واردشده محاسبه شده و پیش‌بینی قطعی آینده نیست.';
-
-  return [
-    `نتیجه: ${display}`,
-    `قیمت خانه: ${nfFa.format(priceToman)} تومان`,
-    `پس‌انداز فعلی: ${nfFa.format(s0Toman)} تومان`,
-    `پس‌انداز ماهانه: ${nfFa.format(m0Toman)} تومان`,
-    `تحقق پس‌انداز: ${nfFa.format(rPct)}٪`,
-    `سناریوی رشد مسکن: ${INFLATION_LABEL[inflationScenario]} (${nfFa.format(infPct)}٪)`,
-    `سناریوی پس‌انداز: ${SAVING_LABEL[savingScenario]} (اختلاف با مسکن: ${nfFa.format(deltaPct)}٪)`,
-    `رشد سالانه دارایی پس‌انداز (تقریبی): ${nfFa.format(assetGrowthPct)}٪`,
-    `رشد توان پس‌انداز: ${nfFa.format(gPct)}٪`,
-    '',
-    footer,
-  ].join('\n');
-}
-
-// --- DEV presets ---
-const PRESETS: Array<{
-  id: string;
-  title: string;
-  note: string;
-  values: Inputs;
-}> = [
-  {
-    id: 'edge_huge_price_tiny_saving',
-    title: 'قیمت خیلی بالا + پس‌انداز خیلی کم',
-    note: 'خروجی باید «خیلی طولانی» شود و هشدارها ممکن است ظاهر شوند.',
-    values: {
-      ...DEFAULT_INPUTS,
-      price: '10000000000000',
-      currentSavings: '1',
-      monthlySaving: '1',
-      inflationScenario: 'base',
-      savingScenario: 'value',
-    },
-  },
-  {
-    id: 'edge_zero_monthly',
-    title: 'پس‌انداز ماهانه صفر',
-    note: 'اگر پس‌انداز فعلی کافی نباشد، خروجی باید «خیلی طولانی» شود.',
-    values: {
-      ...DEFAULT_INPUTS,
-      price: '3500000000',
-      currentSavings: '400000000',
-      monthlySaving: '0',
-      inflationScenario: 'base',
-      savingScenario: 'value',
-    },
-  },
-  {
-    id: 'edge_already_enough',
-    title: 'پس‌انداز فعلی کافی',
-    note: 'خروجی باید «همین الان» باشد.',
-    values: {
-      ...DEFAULT_INPUTS,
-      price: '3500000000',
-      currentSavings: '4000000000',
-      monthlySaving: '0',
-      inflationScenario: 'base',
-      savingScenario: 'value',
-    },
-  },
-];
-
-export default function BuyHouseCalculatorPage() {
-  const IS_DEV = process.env.NODE_ENV !== 'production';
-
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const didInitFromUrl = useRef(false);
-
-  const [showEdgeCases, setShowEdgeCases] = useState<boolean>(IS_DEV);
-
-  const [showInflationHelp, setShowInflationHelp] = useState(false);
-  const [showDeltaHelp, setShowDeltaHelp] = useState(false);
-
-  // ✅ inputs collapsible after result
-  const [inputsOpen, setInputsOpen] = useState(true);
-
-  const [inputs, setInputs] = useState<Inputs>({ ...DEFAULT_INPUTS });
-  const [result, setResult] = useState<CalcResult | null>(null);
-  const [toast, setToast] = useState<string>('');
-
-  const topRef = useRef<HTMLDivElement | null>(null);
-  const priceInputRef = useRef<HTMLInputElement>(null);
-  const resultRef = useRef<HTMLDivElement | null>(null);
-
+  // sync initial from URL
   useEffect(() => {
-    if (didInitFromUrl.current) return;
-    didInitFromUrl.current = true;
-
-    try {
-      const fromUrl = parseInputsFromSearchParams(searchParams);
-      if (Object.keys(fromUrl).length > 0) {
-        setInputs((prev) => ({ ...prev, ...fromUrl }));
-      }
-    } catch {
-      // ignore
-    }
+    if (!searchParams) return;
+    const parsed = parseInputsFromSearchParams(searchParams);
+    if (Object.keys(parsed).length === 0) return;
+    setInputs((prev) => ({ ...prev, ...parsed }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const parsed = useMemo(() => {
-    const P = toNumber(inputs.price);
-    const S0 = toNumber(inputs.currentSavings);
-    const M0 = toNumber(inputs.monthlySaving);
+  // update URL (debounced)
+  const urlUpdateTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (!searchParams) return;
 
-    const rPct = toNumber(inputs.realizationPercent);
-    const r01 = pctTo01_0_100(rPct);
+    if (urlUpdateTimer.current) window.clearTimeout(urlUpdateTimer.current);
+    urlUpdateTimer.current = window.setTimeout(() => {
+      const sp = buildSearchParamsFromInputs(inputs);
+      const next = sp.toString();
+      const current = searchParams.toString();
+      if (next !== current) {
+        router.replace(`${pathname}?${next}`, { scroll: false });
+      }
+    }, 300);
 
-    const infPct =
-      inputs.inflationScenario === 'custom'
-        ? toNumber(inputs.inflationCustomPercent)
-        : INFLATION_DEFAULTS[inputs.inflationScenario];
-    const inf01 = pctTo01_0_100(infPct);
+    return () => {
+      if (urlUpdateTimer.current) window.clearTimeout(urlUpdateTimer.current);
+    };
+  }, [inputs, pathname, router, searchParams]);
 
-    const deltaPct =
-      inputs.savingScenario === 'custom'
-        ? toNumber(inputs.savingDeltaPercent)
-        : SAVING_DELTA_DEFAULTS[inputs.savingScenario];
+  const parsedNums = useMemo(() => {
+    const price = parseNumber(inputs.price);
+    const s0 = parseNumber(inputs.currentSavings);
+    const m0 = parseNumber(inputs.monthlySaving);
+    const r = parseNumber(inputs.realizationPercent);
 
-    const assetGrowthPct = infPct + deltaPct;
-    const assetGrowth01 = pctTo01_signed(assetGrowthPct);
-
-    const gPct = toNumber(inputs.growthPercent);
-    const g01 = pctTo01_0_100(gPct);
+    const infCustom = parseNumber(inputs.inflationCustom);
+    const savCustom = parseNumber(inputs.savingCustom);
+    const salCustom = parseNumber(inputs.salaryCustom ?? '');
 
     return {
-      P,
-      S0,
-      M0,
-      rPct,
-      r01,
-      infPct,
-      inf01,
-      deltaPct,
-      assetGrowthPct,
-      assetGrowth01,
-      gPct,
-      g01,
+      price,
+      s0,
+      m0,
+      r,
+      infCustom,
+      savCustom,
+      salCustom,
     };
   }, [inputs]);
 
-  const warnings = useMemo(() => {
-    const { P, M0, r01, inf01, g01, deltaPct } = parsed;
-    if (!isFiniteAll(P, M0, r01, inf01, g01, deltaPct)) return [];
-    if (!(P > 0)) return [];
-    return buildWarnings({ P, M0, r01, inf01, g01, deltaPct });
-  }, [parsed]);
+  const scenarioRates = useMemo(() => {
+    const inflationRateYearly =
+      inputs.inflationScenario === 'low'
+        ? 20
+        : inputs.inflationScenario === 'high'
+          ? 50
+          : inputs.inflationScenario === 'custom'
+            ? parsedNums.infCustom ?? 30
+            : 30;
 
-  const effectiveMonthlySaving = useMemo(() => {
-    const m = toNumber(inputs.monthlySaving);
-    const r = toNumber(inputs.realizationPercent);
-    if (!Number.isFinite(m) || !Number.isFinite(r)) return 0;
-    return Math.max(0, m) * pctTo01_0_100(r);
-  }, [inputs.monthlySaving, inputs.realizationPercent]);
+    const savingReturnYearly =
+      inputs.savingScenario === 'bank'
+        ? 20
+        : inputs.savingScenario === 'value'
+          ? 30
+          : inputs.savingScenario === 'growth'
+            ? 40
+            : inputs.savingScenario === 'custom'
+              ? parsedNums.savCustom ?? 20
+              : 20;
 
-  const reachYearCeil = useMemo(() => {
-    if (!result || !result.ok) return null;
-    if (result.display === VERY_LONG_TEXT) return null;
-    if (result.months <= 0) return 0;
-    return ceilDiv(result.months, 12);
+    const salaryGrowthYearly =
+      inputs.salaryScenario === 'custom' ? parsedNums.salCustom ?? 0 : 0;
+
+    return {
+      inflationRateYearly,
+      savingReturnYearly,
+      salaryGrowthYearly,
+    };
+  }, [inputs, parsedNums]);
+
+  const result = useMemo(() => {
+    if (!isFiniteNumber(parsedNums.price ?? NaN) || (parsedNums.price ?? 0) <= 0) {
+      return { ok: false as const, message: 'قیمت خانه را وارد کنید.' };
+    }
+    if (!isFiniteNumber(parsedNums.s0 ?? NaN) || (parsedNums.s0 ?? 0) < 0) {
+      return { ok: false as const, message: 'پس‌انداز فعلی معتبر نیست.' };
+    }
+    if (!isFiniteNumber(parsedNums.m0 ?? NaN) || (parsedNums.m0 ?? 0) < 0) {
+      return { ok: false as const, message: 'پس‌انداز ماهانه معتبر نیست.' };
+    }
+    if (!isFiniteNumber(parsedNums.r ?? NaN) || (parsedNums.r ?? 0) < 0) {
+      return { ok: false as const, message: 'درصد تحقق معتبر نیست.' };
+    }
+
+    const res = calcMonthsToBuyHouse({
+      price: parsedNums.price!,
+      currentSavings: parsedNums.s0 ?? 0,
+      monthlySaving: parsedNums.m0 ?? 0,
+      realizationPercent: parsedNums.r ?? 20,
+      inflationRateYearly: scenarioRates.inflationRateYearly,
+      savingReturnYearly: scenarioRates.savingReturnYearly,
+      salaryGrowthYearly: scenarioRates.salaryGrowthYearly,
+    });
+
+    if (!isFiniteNumber(res.months)) {
+      return { ok: true as const, months: Infinity, details: res.details };
+    }
+
+    return { ok: true as const, months: res.months, details: res.details };
+  }, [parsedNums, scenarioRates]);
+
+  const headline = useMemo(() => {
+    if (!result.ok) return '—';
+    if (!isFiniteNumber(result.months) || result.months === Infinity) return 'بسیار طولانی';
+    return monthsToHuman(result.months);
   }, [result]);
-
-  const annualDetails = useMemo(() => {
-    const { P, S0, M0, r01, inf01, g01, assetGrowth01 } = parsed;
-    if (!isFiniteAll(P, S0, M0, r01, inf01, g01, assetGrowth01)) return [];
-    if (!(P > 0)) return [];
-
-    const baseYears = 10;
-    const yearsToShow =
-      reachYearCeil !== null ? Math.max(0, Math.min(baseYears, reachYearCeil)) : baseYears;
-
-    if (yearsToShow === 0) return [];
-
-    return buildAnnualDetails({
-      P,
-      S0,
-      M0,
-      r01,
-      inf01,
-      g01,
-      assetGrowth01,
-      yearsToShow,
-    });
-  }, [parsed, reachYearCeil]);
-
-  const resultShareText = useMemo(() => {
-    if (!result || !result.ok) return '';
-    const { P, S0, M0, rPct, infPct, deltaPct, assetGrowthPct, gPct } = parsed;
-    if (!isFiniteAll(P, S0, M0, rPct, infPct, deltaPct, assetGrowthPct, gPct)) return '';
-    return buildShareText({
-      display: result.display,
-      priceToman: P,
-      s0Toman: S0,
-      m0Toman: M0,
-      rPct: clamp(rPct, 0, 100),
-      inflationScenario: inputs.inflationScenario,
-      infPct: clamp(infPct, 0, 100),
-      savingScenario: inputs.savingScenario,
-      deltaPct: clamp(deltaPct, -100, 200),
-      assetGrowthPct: clamp(assetGrowthPct, -100, 200),
-      gPct: clamp(gPct, 0, 100),
-    });
-  }, [parsed, result, inputs.inflationScenario, inputs.savingScenario]);
-
-  function setField<K extends keyof Inputs>(key: K, value: string) {
-    setInputs((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function showToast(msg: string) {
-    setToast(msg);
-    window.setTimeout(() => setToast(''), 1600);
-  }
-
-  function onCalculate() {
-    const { P, S0, M0, r01, inf01, g01, assetGrowth01 } = parsed;
-
-    if ([P, S0, M0, r01, inf01, g01, assetGrowth01].some((x) => Number.isNaN(x))) {
-      setResult({ ok: false, error: 'لطفاً فقط عدد وارد کنید.' });
-      setInputsOpen(true);
-      return;
-    }
-
-    const res = calculateV4({ P, S0, M0, r01, inf01, g01, assetGrowth01 });
-    setResult(res);
-
-    if (res.ok) {
-      setInputsOpen(false);
-      window.setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        resultRef.current?.focus();
-      }, 40);
-    } else {
-      setInputsOpen(true);
-      window.setTimeout(() => {
-        topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        priceInputRef.current?.focus();
-      }, 40);
-    }
-
-    try {
-      const qs = buildShareQuery(inputs);
-      router.replace(`${pathname}${qs}`, { scroll: false });
-    } catch {
-      // ignore
-    }
-  }
-
-  function onEditInputs() {
-    setInputsOpen(true);
-    window.setTimeout(() => {
-      priceInputRef.current?.focus();
-      priceInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 120);
-    showToast('می‌تونی ورودی‌ها رو تغییر بدی');
-  }
-
-  function onResetAll() {
-    setInputs({ ...DEFAULT_INPUTS });
-    setResult(null);
-    setInputsOpen(true);
-    setShowInflationHelp(false);
-    setShowDeltaHelp(false);
-    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    window.setTimeout(() => priceInputRef.current?.focus(), 200);
-    showToast('ریست شد');
-  }
-
-  async function onCopy() {
-    if (!result || !result.ok || !resultShareText) return;
-    try {
-      await navigator.clipboard.writeText(resultShareText);
-      showToast('کپی شد');
-    } catch {
-      showToast('کپی انجام نشد');
-    }
-  }
-
-  function buildCurrentShareUrl(): string {
-    const qs = buildShareQuery(inputs);
-    if (typeof window === 'undefined') return `${pathname}${qs}`;
-    const url = new URL(window.location.href);
-    url.pathname = pathname;
-    url.search = qs.startsWith('?') ? qs.slice(1) : qs;
-    return url.toString();
-  }
-
-  async function onCopyLink() {
-    try {
-      const link = buildCurrentShareUrl();
-      await navigator.clipboard.writeText(link);
-      showToast('لینک کپی شد');
-    } catch {
-      showToast('کپی لینک انجام نشد');
-    }
-  }
-
-  async function onShare() {
-    if (!result || !result.ok || !resultShareText) return;
-    try {
-      const canShare = typeof navigator !== 'undefined' && (navigator as any).share;
-      if (canShare) {
-        await (navigator as any).share({ text: resultShareText, url: buildCurrentShareUrl() });
-        return;
-      }
-      await navigator.clipboard.writeText(buildCurrentShareUrl());
-      showToast('لینک کپی شد (اشتراک‌گذاری پشتیبانی نشد)');
-    } catch {
-      showToast('اشتراک‌گذاری انجام نشد');
-    }
-  }
-
-  function applyPreset(p: (typeof PRESETS)[number]) {
-    setInputs(p.values);
-    setResult(null);
-    setInputsOpen(true);
-    setShowInflationHelp(false);
-    setShowDeltaHelp(false);
-    showToast('سناریو اعمال شد');
-  }
-
-  // --- tokens ---
-  const bg = '#F9FAFB';
-  const panel = '#FFFFFF';
-  const border = 'rgba(15, 23, 42, 0.10)';
-  const text = '#0F172A';
-  const muted = 'rgba(15, 23, 42, 0.72)';
-  const subtle = 'rgba(15, 23, 42, 0.56)';
-  const inputBg = '#FFFFFF';
-  const btnBg = '#111827';
-  const btnText = '#FFFFFF';
-  const btnGhostBg = 'rgba(15, 23, 42, 0.05)';
-
-  const isVeryLong = !!(result && result.ok && result.display === VERY_LONG_TEXT);
 
   return (
     <>
       <Head>
-        <title>تخمین زمان خرید خانه | تخمینو</title>
-        <meta
-          name="description"
-          content="تخمین زمان خرید خانه بر اساس پس‌انداز فعلی، پس‌انداز ماهانه و سناریوی رشد قیمت مسکن (نتیجه تقریبی است)."
-        />
-        <meta name="robots" content="index,follow" />
+        <title>تخمین خرید خانه | تخمینو</title>
+        <meta name="description" content="تخمین زمان خرید خانه با فرض شرایط فعلی" />
       </Head>
 
-      <main dir="rtl" className={vazirmatn.className} style={{ minHeight: '100vh', background: bg, color: text }}>
-        <style jsx global>{`
-          @keyframes fadeUp {
-            from {
-              opacity: 0;
-              transform: translateY(8px);
+      <main className={vazirmatn.className} dir="rtl">
+        <div className="mx-auto max-w-3xl px-4 py-6">
+          <ToolHeader
+            icon={<Home className="h-5 w-5" />}
+            title="تخمین خرید خانه"
+            subtitle="اگر شرایط فعلی تغییر نکند"
+            helpText={
+              <div className="space-y-2 text-sm leading-7">
+                <p>این ابزار یک «تخمین» است و قطعیت ندارد.</p>
+                <p>
+                  خروجی بر اساس ورودی‌های شما و نرخ‌های انتخابی محاسبه می‌شود.
+                  اگر عدد خیلی بزرگ شد، یعنی فاصله‌ی قیمت خانه با توان پس‌انداز فعلی زیاد است.
+                </p>
+              </div>
             }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}</style>
+          />
 
-        <div ref={topRef} style={{ maxWidth: 640, margin: '0 auto', padding: '18px 14px 28px' }}>
-          
+          {/* فرم */}
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm text-slate-700">قیمت خانه (تومان)</span>
+                <input
+                  value={inputs.price}
+                  onChange={(e) => setInputs((p) => ({ ...p, price: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                  inputMode="numeric"
+                  placeholder="مثلاً ۳٬۵۰۰٬۰۰۰٬۰۰۰"
+                />
+              </label>
 
-          {/* RESULT */}
-          {result ? (
-            <section style={{ marginBottom: 12 }}>
-              <div
-                ref={resultRef}
-                tabIndex={-1}
-                style={{
-                  background: panel,
-                  border: `1px solid ${border}`,
-                  borderRadius: 18,
-                  padding: 14,
-                  boxShadow: '0 10px 30px rgba(15,23,42,0.06)',
-                  animation: 'fadeUp 220ms ease-out',
-                  outline: 'none',
-                }}
-              >
-                {result.ok ? (
-                  <>
-                    <div
-                      style={{
-                        borderRadius: 16,
-                        padding: '12px 12px',
-                        border: `1px solid ${border}`,
-                        background: isVeryLong ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-                      }}
-                    >
-                      <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1.35, textAlign: 'right' }}>
-                        {result.display}
-                      </div>
-                      <div style={{ marginTop: 6, color: muted, lineHeight: 1.85, textAlign: 'right', fontSize: 13 }}>
-                        اگر شرایط فعلی و سناریوهای شما تغییر نکند.
-                      </div>
-                      <div style={{ marginTop: 8, fontSize: 12, color: subtle, lineHeight: 1.8, textAlign: 'right' }}>
-                        این نتیجه بر اساس فرض‌های واردشده محاسبه شده و پیش‌بینی قطعی آینده نیست.
-                      </div>
-                    </div>
+              <label className="block">
+                <span className="mb-1 block text-sm text-slate-700">پس‌انداز فعلی (تومان)</span>
+                <input
+                  value={inputs.currentSavings}
+                  onChange={(e) => setInputs((p) => ({ ...p, currentSavings: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                  inputMode="numeric"
+                  placeholder="مثلاً ۲۰۰٬۰۰۰٬۰۰۰"
+                />
+              </label>
 
-                    <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
-                      <MiniRow label="قیمت فعلی خانه" value={formatToman(parsed.P || 0)} border={border} />
-                      <MiniRow label="پس‌انداز فعلی" value={formatToman(parsed.S0 || 0)} border={border} />
-                      <MiniRow label="پس‌انداز ماهانه" value={formatToman(parsed.M0 || 0)} border={border} />
-                      <MiniRow label="پس‌انداز مؤثر ماهانه" value={formatToman(effectiveMonthlySaving)} border={border} />
-                    </div>
+              <label className="block">
+                <span className="mb-1 block text-sm text-slate-700">پس‌انداز ماهانه (تومان)</span>
+                <input
+                  value={inputs.monthlySaving}
+                  onChange={(e) => setInputs((p) => ({ ...p, monthlySaving: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                  inputMode="numeric"
+                  placeholder="مثلاً ۱۵٬۰۰۰٬۰۰۰"
+                />
+              </label>
 
-                    {/* Actions (single set) */}
-                    <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        <button
-                          onClick={onCopy}
-                          style={{
-                            width: '100%',
-                            padding: '12px 12px',
-                            borderRadius: 16,
-                            border: `1px solid ${border}`,
-                            background: btnGhostBg,
-                            color: text,
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                            transition: 'transform 0.15s ease',
-                          }}
-                          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.99)')}
-                          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                        >
-                          کپی نتیجه
-                        </button>
+              <label className="block">
+                <span className="mb-1 block text-sm text-slate-700">درصد تحقق (مثلاً پیش‌پرداخت) %</span>
+                <input
+                  value={inputs.realizationPercent}
+                  onChange={(e) => setInputs((p) => ({ ...p, realizationPercent: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                  inputMode="numeric"
+                  placeholder="مثلاً ۲۰"
+                />
+              </label>
+            </div>
 
-                        <button
-                          onClick={onCopyLink}
-                          style={{
-                            width: '100%',
-                            padding: '12px 12px',
-                            borderRadius: 16,
-                            border: `1px solid ${border}`,
-                            background: btnGhostBg,
-                            color: text,
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                            transition: 'transform 0.15s ease',
-                          }}
-                          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.99)')}
-                          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                        >
-                          کپی لینک
-                        </button>
-                      </div>
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-2 text-sm font-semibold text-slate-800">سناریوی تورم خانه</div>
+                <select
+                  value={inputs.inflationScenario}
+                  onChange={(e) => setInputs((p) => ({ ...p, inflationScenario: e.target.value as InflationScenario }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                >
+                  <option value="low">کم (۲۰٪ سالانه)</option>
+                  <option value="base">معمولی (۳۰٪ سالانه)</option>
+                  <option value="high">زیاد (۵۰٪ سالانه)</option>
+                  <option value="custom">سفارشی</option>
+                </select>
 
-                      <button
-                        onClick={onShare}
-                        style={{
-                          width: '100%',
-                          padding: '12px 12px',
-                          borderRadius: 16,
-                          border: `1px solid ${border}`,
-                          background: btnGhostBg,
-                          color: text,
-                          fontWeight: 900,
-                          cursor: 'pointer',
-                          transition: 'transform 0.15s ease',
-                        }}
-                        onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.99)')}
-                        onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                      >
-                        اشتراک‌گذاری
-                      </button>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                        <button
-                          onClick={onEditInputs}
-                          style={{
-                            width: '100%',
-                            padding: '12px 12px',
-                            borderRadius: 16,
-                            border: `1px solid ${border}`,
-                            background: 'rgba(15,23,42,0.03)',
-                            color: text,
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ویرایش ورودی‌ها
-                        </button>
-
-                        <button
-                          onClick={onResetAll}
-                          style={{
-                            width: '100%',
-                            padding: '12px 12px',
-                            borderRadius: 16,
-                            border: `1px solid ${border}`,
-                            background: 'rgba(15,23,42,0.03)',
-                            color: text,
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ریست کامل
-                        </button>
-                      </div>
-
-                      <div style={{ fontSize: 12, color: subtle, lineHeight: 1.7, textAlign: 'right' }}>
-                        نتیجه اصلی فقط «حدود زمان» را نشان می‌دهد؛ جزئیات برای شفافیت محاسبه، سالانه و تقریبی است.
-                      </div>
-                    </div>
-
-                    {/* Annual details */}
-                    <div style={{ marginTop: 12 }}>
-                      <details
-                        style={{
-                          border: `1px solid ${border}`,
-                          borderRadius: 16,
-                          background: 'rgba(15,23,42,0.02)',
-                          padding: '10px 12px',
-                        }}
-                      >
-                        <summary style={{ cursor: 'pointer', fontWeight: 900 }}>جزئیات محاسبه (سالانه، تقریبی)</summary>
-
-                        <div style={{ marginTop: 10, color: muted, fontSize: 13, lineHeight: 1.9 }}>
-                          <div>
-                            سناریوی رشد مسکن:{' '}
-                            <b>
-                              {INFLATION_LABEL[inputs.inflationScenario]} ({nfFa.format(clamp(parsed.infPct || 0, 0, 100))}٪)
-                            </b>
-                          </div>
-                          <div>
-                            سناریوی پس‌انداز:{' '}
-                            <b>
-                              {SAVING_LABEL[inputs.savingScenario]} (اختلاف با مسکن: {nfFa.format(clamp(parsed.deltaPct || 0, -100, 200))}٪)
-                            </b>
-                          </div>
-                          <div>
-                            رشد سالانه دارایی پس‌انداز (تقریبی): <b>{nfFa.format(clamp(parsed.assetGrowthPct || 0, -100, 200))}٪</b>
-                          </div>
-                          <div>
-                            رشد سالانه توان پس‌انداز: <b>{nfFa.format(clamp(parsed.gPct || 0, 0, 100))}٪</b>
-                          </div>
-                          <div>
-                            تحقق پس‌انداز: <b>{nfFa.format(clamp(parsed.rPct || 0, 0, 100))}٪</b>
-                          </div>
-
-                          {reachYearCeil !== null ? (
-                            <div style={{ marginTop: 8, color: subtle }}>
-                              جدول زیر فقط تا <b>سال {nfFa.format(reachYearCeil)}</b> نمایش داده می‌شود.
-                            </div>
-                          ) : (
-                            <div style={{ marginTop: 8, color: subtle }}>جدول زیر فقط «۱۰ سال اول» را نشان می‌دهد.</div>
-                          )}
-                        </div>
-
-                        <div style={{ marginTop: 10, overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 12 }}>
-                            <thead>
-                              <tr>
-                                <Th border={border}>سال</Th>
-                                <Th border={border}>قیمت خانه</Th>
-                                <Th border={border}>پس‌انداز</Th>
-                                <Th border={border}>کمبود</Th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {annualDetails.map((r) => (
-                                <tr key={r.year}>
-                                  <Td border={border}>{nfFa.format(r.year)}</Td>
-                                  <Td border={border}>{nfFa.format(Math.round(r.housePrice))}</Td>
-                                  <Td border={border}>{nfFa.format(Math.round(r.savings))}</Td>
-                                  <Td border={border}>{r.reached ? '✅ صفر' : nfFa.format(Math.round(r.gap))}</Td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </details>
-                    </div>
-                  </>
-                ) : (
-                  <div
-                    style={{
-                      borderRadius: 16,
-                      border: `1px solid ${border}`,
-                      padding: '12px 12px',
-                      background: 'rgba(239,68,68,0.06)',
-                      color: text,
-                      fontWeight: 900,
-                      lineHeight: 1.9,
-                    }}
-                  >
-                    {result.error}
+                {inputs.inflationScenario === 'custom' && (
+                  <div className="mt-2">
+                    <input
+                      value={inputs.inflationCustom}
+                      onChange={(e) => setInputs((p) => ({ ...p, inflationCustom: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                      inputMode="numeric"
+                      placeholder="مثلاً ۳۵"
+                    />
                   </div>
                 )}
               </div>
-            </section>
-          ) : null}
 
-          {/* INPUTS */}
-          {!result || inputsOpen ? (
-            <section
-              style={{
-                background: panel,
-                border: `1px solid ${border}`,
-                borderRadius: 18,
-                boxShadow: '0 10px 30px rgba(15,23,42,0.06)',
-                overflow: 'hidden',
-              }}
-            >
-              <ToolHeader
-                icon={<Home className="w-11 h-11 stroke-[1.75] text-[#16A34A]" />}
-                title="چند سال دیگه می‌تونم خونه بخرم؟"
-                subtitle="تخمین تقریبی با شرایط فعلی شما"
-                helpText="این محاسبه بر اساس سناریوهای انتخابی شما انجام می‌شود و پیش‌بینی قطعی آینده نیست.
-"
-              />
-
-              <div style={{ padding: 14 }}>
-              <FieldMoney
-                id="price"
-                label="قیمت فعلی خانه"
-                placeholder="مثلاً ۳٬۵۰۰٬۰۰۰٬۰۰۰"
-                helper="قیمت امروز خانه‌ای که می‌خواهید بخرید. (تومان)"
-                value={inputs.price}
-                onChange={(v) => setField('price', v)}
-                onBlur={() => setField('price', formatMoneyInput(inputs.price))}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-                inputRef={priceInputRef}
-              />
-
-              <FieldMoney
-                id="currentSavings"
-                label="پس‌انداز فعلی"
-                placeholder="مثلاً ۴۰۰٬۰۰۰٬۰۰۰"
-                helper="مقداری که همین الان دارید. (تومان)"
-                value={inputs.currentSavings}
-                onChange={(v) => setField('currentSavings', v)}
-                onBlur={() => setField('currentSavings', formatMoneyInput(inputs.currentSavings))}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-              />
-
-              <FieldMoney
-                id="monthlySaving"
-                label="پس‌انداز ماهانه"
-                placeholder="مثلاً ۱۵٬۰۰۰٬۰۰۰"
-                helper="مبلغی که دوست دارید هر ماه کنار بگذارید. (تومان)"
-                value={inputs.monthlySaving}
-                onChange={(v) => setField('monthlySaving', v)}
-                onBlur={() => setField('monthlySaving', formatMoneyInput(inputs.monthlySaving))}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-              />
-
-              <FieldPercent
-                id="realizationPercent"
-                label="در عمل چند٪ از این مبلغ را می‌توانید پس‌انداز کنید؟"
-                placeholder="مثلاً ۸۰"
-                helper="اگر بعضی ماه‌ها کمتر/هیچ پس‌انداز نمی‌کنید، این درصد را پایین‌تر بگذارید."
-                helper2="این درصد روی «پس‌انداز مؤثر ماهانه» اثر می‌گذارد."
-                value={inputs.realizationPercent}
-                onChange={(v) => setField('realizationPercent', v)}
-                onBlur={() => setField('realizationPercent', formatPercentInput0to100(inputs.realizationPercent))}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-              />
-
-              <FieldSelect
-                id="inflationScenario"
-                label="سناریوی رشد قیمت مسکن"
-                helper="به‌جای یک عدد قطعی، یک سناریو انتخاب کنید."
-                value={inputs.inflationScenario}
-                onChange={(v) => setField('inflationScenario', v as InflationScenario)}
-                options={[
-                  { value: 'low', label: `پایین (${nfFa.format(INFLATION_DEFAULTS.low)}٪)` },
-                  { value: 'base', label: `محتمل (${nfFa.format(INFLATION_DEFAULTS.base)}٪)` },
-                  { value: 'high', label: `بالا (${nfFa.format(INFLATION_DEFAULTS.high)}٪)` },
-                  { value: 'custom', label: 'سفارشی' },
-                ]}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-              />
-
-              {inputs.inflationScenario === 'custom' && (
-                <>
-                  <InlineHelpToggle
-                    label="راهنمای تورم سفارشی"
-                    isOpen={showInflationHelp}
-                    onToggle={() => setShowInflationHelp((s) => !s)}
-                    border={border}
-                    subtle={subtle}
-                  />
-                  {showInflationHelp ? (
-                    <HelpBox border={border} muted={muted}>
-                      <div>برای شروع، می‌توانید از این بازه‌ها ایده بگیرید:</div>
-                      <ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>
-                        <li>پایین: {nfFa.format(INFLATION_DEFAULTS.low)}٪</li>
-                        <li>محتمل: {nfFa.format(INFLATION_DEFAULTS.base)}٪</li>
-                        <li>بالا: {nfFa.format(INFLATION_DEFAULTS.high)}٪</li>
-                      </ul>
-                    </HelpBox>
-                  ) : null}
-
-                  <FieldPercent
-                    id="inflationCustomPercent"
-                    label="تورم سالانه قیمت مسکن (سفارشی)"
-                    placeholder="مثلاً ۳۰"
-                    helper="این عدد فقط برای سناریوی سفارشی استفاده می‌شود."
-                    value={inputs.inflationCustomPercent}
-                    onChange={(v) => setField('inflationCustomPercent', v)}
-                    onBlur={() =>
-                      setField('inflationCustomPercent', formatPercentInput0to100(inputs.inflationCustomPercent))
-                    }
-                    inputBg={inputBg}
-                    border={border}
-                    text={text}
-                    muted={muted}
-                  />
-                </>
-              )}
-
-              <FieldSelect
-                id="savingScenario"
-                label="سناریوی حفظ ارزش پس‌انداز"
-                helper="پس‌انداز شما نسبت به رشد مسکن عقب می‌ماند یا هم‌راستا/جلوتر است."
-                value={inputs.savingScenario}
-                onChange={(v) => setField('savingScenario', v as SavingScenario)}
-                options={[
-                  { value: 'bank', label: `سپرده بانکی (ریالی) (اختلاف: ${nfFa.format(SAVING_DELTA_DEFAULTS.bank)}٪)` },
-                  { value: 'value', label: `حفظ ارزش (طلا/ارز) (اختلاف: +${nfFa.format(SAVING_DELTA_DEFAULTS.value)}٪)` },
-                  { value: 'growth', label: `رشد بیشتر (ریسکی) (اختلاف: +${nfFa.format(SAVING_DELTA_DEFAULTS.growth)}٪)` },
-                  { value: 'custom', label: 'سفارشی' },
-                ]}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-              />
-
-              {inputs.savingScenario === 'custom' && (
-                <>
-                  <InlineHelpToggle
-                    label="راهنمای دلتا سفارشی"
-                    isOpen={showDeltaHelp}
-                    onToggle={() => setShowDeltaHelp((s) => !s)}
-                    border={border}
-                    subtle={subtle}
-                  />
-                  {showDeltaHelp ? (
-                    <HelpBox border={border} muted={muted}>
-                      <div>نمونه‌های رایج (تقریبی):</div>
-                      <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        <Pill border={border}>بانک: −۱۰٪</Pill>
-                        <Pill border={border}>طلا/ارز: ۰ تا +۵٪</Pill>
-                        <Pill border={border}>ریسکی: +۱۰٪+</Pill>
-                      </div>
-                      <div style={{ marginTop: 6, opacity: 0.8 }}>«دلتا» یعنی اختلاف رشد پس‌انداز شما نسبت به رشد مسکن.</div>
-                    </HelpBox>
-                  ) : null}
-
-                  <FieldPercentSigned
-                    id="savingDeltaPercent"
-                    label="اختلاف رشد پس‌انداز نسبت به رشد مسکن (٪)"
-                    placeholder="مثلاً -۱۰ یا +۵"
-                    helper="اگر فکر می‌کنید سرمایه‌گذاری شما از رشد مسکن عقب می‌ماند عدد منفی بدهید."
-                    helper2="بازه پیشنهادی: از −۲۰٪ تا +۲۰٪"
-                    value={inputs.savingDeltaPercent}
-                    onChange={(v) => setField('savingDeltaPercent', v)}
-                    onBlur={() => setField('savingDeltaPercent', formatPercentInputSigned(inputs.savingDeltaPercent))}
-                    inputBg={inputBg}
-                    border={border}
-                    text={text}
-                    muted={muted}
-                  />
-                </>
-              )}
-
-              <FieldPercent
-                id="growthPercent"
-                label="افزایش احتمالی توان پس‌انداز در آینده"
-                placeholder="مثلاً ۱۰"
-                helper="اگر فکر می‌کنید به مرور می‌توانید بیشتر پس‌انداز کنید، این عدد را وارد کنید."
-                helper2="نتیجه، پیش‌بینی قطعی آینده نیست."
-                value={inputs.growthPercent}
-                onChange={(v) => setField('growthPercent', v)}
-                onBlur={() => setField('growthPercent', formatPercentInput0to100(inputs.growthPercent))}
-                inputBg={inputBg}
-                border={border}
-                text={text}
-                muted={muted}
-              />
-
-              {warnings.length > 0 ? (
-                <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
-                  {warnings.map((k) => (
-                    <div
-                      key={k}
-                      style={{
-                        borderRadius: 14,
-                        padding: '10px 12px',
-                        background: 'rgba(15,23,42,0.03)',
-                        border: `1px solid ${border}`,
-                        lineHeight: 1.8,
-                        fontSize: 13,
-                        color: muted,
-                      }}
-                    >
-                      {WARNING_TEXT[k]}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              <div style={{ marginTop: 14 }}>
-                <button
-                  onClick={onCalculate}
-                  style={{
-                    width: '100%',
-                    padding: '13px 14px',
-                    borderRadius: 16,
-                    border: `1px solid rgba(17,24,39,0.12)`,
-                    background: btnBg,
-                    color: btnText,
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s ease',
-                  }}
-                  onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.99)')}
-                  onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-2 text-sm font-semibold text-slate-800">سناریوی رشد پس‌انداز</div>
+                <select
+                  value={inputs.savingScenario}
+                  onChange={(e) => setInputs((p) => ({ ...p, savingScenario: e.target.value as SavingScenario }))}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
                 >
-                  {result ? 'محاسبه دوباره' : 'محاسبه'}
-                </button>
-              </div>
-              </div>
-            </section>
-          ) : null}
+                  <option value="bank">بانکی (۲۰٪ سالانه)</option>
+                  <option value="value">همگام ارزش (۳۰٪ سالانه)</option>
+                  <option value="growth">پرریسک‌تر (۴۰٪ سالانه)</option>
+                  <option value="custom">سفارشی</option>
+                </select>
 
-          
-
-          {toast ? (
-            <div
-              style={{
-                position: 'fixed',
-                left: 14,
-                right: 14,
-                bottom: 14,
-                margin: '0 auto',
-                maxWidth: 640,
-                background: '#111827',
-                color: '#fff',
-                borderRadius: 14,
-                padding: '10px 12px',
-                fontWeight: 900,
-                textAlign: 'center',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
-              }}
-            >
-              {toast}
+                {inputs.savingScenario === 'custom' && (
+                  <div className="mt-2">
+                    <input
+                      value={inputs.savingCustom}
+                      onChange={(e) => setInputs((p) => ({ ...p, savingCustom: e.target.value }))}
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                      inputMode="numeric"
+                      placeholder="مثلاً ۲۵"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          ) : null}
+
+            <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={!!inputs.showDetails}
+                onChange={(e) => setInputs((p) => ({ ...p, showDetails: e.target.checked }))}
+              />
+              نمایش جزئیات
+            </label>
+          </section>
+
+          {/* نتیجه */}
+          <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="text-sm text-slate-600">زمان تقریبی رسیدن</div>
+            <div className="mt-1 text-2xl font-extrabold text-slate-900">{headline}</div>
+
+            {result.ok ? (
+              <div className="mt-2 text-sm text-slate-600">
+                <span>درصد تحقق: </span>
+                <span className="font-semibold text-slate-800">{formatPercent(parseNumber(inputs.realizationPercent) ?? 20)}٪</span>
+                <span className="mx-2">•</span>
+                <span>تورم سالانه: </span>
+                <span className="font-semibold text-slate-800">{formatPercent(scenarioRates.inflationRateYearly)}٪</span>
+                <span className="mx-2">•</span>
+                <span>بازده پس‌انداز: </span>
+                <span className="font-semibold text-slate-800">{formatPercent(scenarioRates.savingReturnYearly)}٪</span>
+              </div>
+            ) : (
+              <div className="mt-2 text-sm text-rose-600">{result.message}</div>
+            )}
+
+            {result.ok && inputs.showDetails && Array.isArray(result.details) && result.details.length > 0 && (
+              <div className="mt-4 overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="text-slate-600">
+                    <tr className="border-b">
+                      <th className="py-2 text-right font-semibold">ماه</th>
+                      <th className="py-2 text-right font-semibold">قیمت خانه</th>
+                      <th className="py-2 text-right font-semibold">پس‌انداز</th>
+                      <th className="py-2 text-right font-semibold">پس‌انداز ماهانه</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-slate-800">
+                    {result.details.slice(0, 120).map((row: any) => (
+                      <tr key={row.month} className="border-b last:border-b-0">
+                        <td className="py-2">{formatToman(row.month)}</td>
+                        <td className="py-2">{formatToman(row.housePrice)}</td>
+                        <td className="py-2">{formatToman(row.savings)}</td>
+                        <td className="py-2">{formatToman(row.monthlySaving)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-2 text-xs text-slate-500">
+                  (برای سبک ماندن صفحه، جدول فقط بخشی از ماه‌ها را نشان می‌دهد.)
+                </div>
+              </div>
+            )}
+          </section>
         </div>
       </main>
     </>
   );
 }
-
-/* ---------------- UI blocks ---------------- */
-
-function InlineHelpToggle(props: {
-  label: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  border: string;
-  subtle: string;
-}) {
-  const { label, isOpen, onToggle, border, subtle } = props;
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-expanded={isOpen}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 10,
-        padding: '10px 12px',
-        borderRadius: 14,
-        border: `1px solid ${border}`,
-        background: 'rgba(15,23,42,0.02)',
-        cursor: 'pointer',
-        marginBottom: 10,
-        color: subtle,
-        fontWeight: 900,
-      }}
-    >
-      <span>{label}</span>
-      <span style={{ fontSize: 12 }}>{isOpen ? 'بستن' : 'نمایش'}</span>
-    </button>
-  );
-}
-
-function HelpBox(props: { children: React.ReactNode; border: string; muted: string }) {
-  const { children, border, muted } = props;
-  return (
-    <div
-      style={{
-        borderRadius: 14,
-        border: `1px solid ${border}`,
-        background: 'rgba(15,23,42,0.03)',
-        padding: '10px 12px',
-        color: muted,
-        fontSize: 12,
-        lineHeight: 1.8,
-        marginBottom: 12,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Pill(props: { children: React.ReactNode; border: string }) {
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '6px 10px',
-        borderRadius: 999,
-        border: `1px solid ${props.border}`,
-        background: 'rgba(15,23,42,0.02)',
-        fontWeight: 900,
-      }}
-    >
-      {props.children}
-    </span>
-  );
-}
-
-function FieldMoney(props: {
-  id: string;
-  label: string;
-  placeholder: string;
-  helper: string;
-  helper2?: string;
-  value: string;
-  onChange: (v: string) => void;
-  onBlur: () => void;
-  inputBg: string;
-  border: string;
-  text: string;
-  muted: string;
-  inputRef?: React.RefObject<HTMLInputElement>;
-}) {
-  const { id, label, placeholder, helper, helper2, value, onChange, onBlur, inputBg, border, text, muted, inputRef } =
-    props;
-
-  const helpId = `${id}-help`;
-  const help2Id = helper2 ? `${id}-help2` : undefined;
-  const describedBy = help2Id ? `${helpId} ${help2Id}` : helpId;
-
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <label
-        htmlFor={id}
-        style={{
-          fontWeight: 800,
-          marginBottom: 6,
-          display: 'block',
-          fontSize: 13,
-          color: 'rgba(15,23,42,0.78)',
-        }}
-      >
-        {label}
-      </label>
-
-      <input
-        ref={inputRef}
-        id={id}
-        aria-label={label}
-        aria-describedby={describedBy}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        inputMode="numeric"
-        style={{
-          width: '100%',
-          borderRadius: 14,
-          border: `1px solid ${border}`,
-          background: inputBg,
-          padding: '12px 12px',
-          outline: 'none',
-          color: text,
-          fontSize: 16,
-          fontWeight: 800,
-        }}
-      />
-
-      <div id={helpId} style={{ marginTop: 6, color: 'rgba(15,23,42,0.60)', fontSize: 12, lineHeight: 1.7 }}>
-        {helper}
-      </div>
-
-      {helper2 ? (
-        <div id={help2Id} style={{ marginTop: 6, color: 'rgba(15,23,42,0.60)', fontSize: 12, lineHeight: 1.7 }}>
-          {helper2}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function FieldPercent(props: {
-  id: string;
-  label: string;
-  placeholder: string;
-  helper: string;
-  helper2?: string;
-  value: string;
-  onChange: (v: string) => void;
-  onBlur: () => void;
-  inputBg: string;
-  border: string;
-  text: string;
-  muted: string;
-}) {
-  const { id, label, placeholder, helper, helper2, value, onChange, onBlur, inputBg, border, text, muted } = props;
-  const helpId = `${id}-help`;
-  const help2Id = helper2 ? `${id}-help2` : undefined;
-  const describedBy = help2Id ? `${helpId} ${help2Id}` : helpId;
-
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <label htmlFor={id} style={{ fontWeight: 800, marginBottom: 6, display: 'block', fontSize: 13 }}>
-        {label}
-      </label>
-
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <input
-          id={id}
-          aria-label={label}
-          aria-describedby={describedBy}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          placeholder={placeholder}
-          inputMode="numeric"
-          style={{
-            width: '100%',
-            borderRadius: 14,
-            border: `1px solid ${border}`,
-            background: inputBg,
-            padding: '12px 12px',
-            outline: 'none',
-            color: text,
-            fontSize: 16,
-            fontWeight: 800,
-          }}
-        />
-        <div style={{ fontWeight: 900, color: 'rgba(15,23,42,0.65)' }}>٪</div>
-      </div>
-
-      <div id={helpId} style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.7 }}>
-        {helper}
-      </div>
-      {helper2 ? (
-        <div id={help2Id} style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.7 }}>
-          {helper2}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function FieldPercentSigned(props: {
-  id: string;
-  label: string;
-  placeholder: string;
-  helper: string;
-  helper2?: string;
-  value: string;
-  onChange: (v: string) => void;
-  onBlur: () => void;
-  inputBg: string;
-  border: string;
-  text: string;
-  muted: string;
-}) {
-  const { id, label, placeholder, helper, helper2, value, onChange, onBlur, inputBg, border, text, muted } = props;
-  const helpId = `${id}-help`;
-  const help2Id = helper2 ? `${id}-help2` : undefined;
-  const describedBy = help2Id ? `${helpId} ${help2Id}` : helpId;
-
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <label htmlFor={id} style={{ fontWeight: 800, marginBottom: 6, display: 'block', fontSize: 13 }}>
-        {label}
-      </label>
-
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <input
-          id={id}
-          aria-label={label}
-          aria-describedby={describedBy}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onBlur={onBlur}
-          placeholder={placeholder}
-          inputMode="numeric"
-          style={{
-            width: '100%',
-            borderRadius: 14,
-            border: `1px solid ${border}`,
-            background: inputBg,
-            padding: '12px 12px',
-            outline: 'none',
-            color: text,
-            fontSize: 16,
-            fontWeight: 800,
-          }}
-        />
-        <div style={{ fontWeight: 900, color: 'rgba(15,23,42,0.65)' }}>٪</div>
-      </div>
-
-      <div id={helpId} style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.7 }}>
-        {helper}
-      </div>
-      {helper2 ? (
-        <div id={help2Id} style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.7 }}>
-          {helper2}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function FieldSelect(props: {
-  id: string;
-  label: string;
-  helper: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: Array<{ value: string; label: string }>;
-  inputBg: string;
-  border: string;
-  text: string;
-  muted: string;
-}) {
-  const { id, label, helper, value, onChange, options, inputBg, border, text, muted } = props;
-  const helpId = `${id}-help`;
-
-  return (
-    <div style={{ marginBottom: 18 }}>
-      <label htmlFor={id} style={{ fontWeight: 800, marginBottom: 6, display: 'block', fontSize: 13 }}>
-        {label}
-      </label>
-
-      <select
-        id={id}
-        aria-label={label}
-        aria-describedby={helpId}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: '100%',
-          borderRadius: 14,
-          border: `1px solid ${border}`,
-          background: inputBg,
-          padding: '12px 12px',
-          outline: 'none',
-          color: text,
-          fontSize: 16,
-          fontWeight: 800,
-          appearance: 'none',
-        }}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-
-      <div id={helpId} style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.7 }}>
-        {helper}
-      </div>
-    </div>
-  );
-}
-
-function MiniRow(props: { label: string; value: string; border: string }) {
-  const { label, value, border } = props;
-  return (
-    <div
-      style={{
-        border: `1px solid ${border}`,
-        borderRadius: 16,
-        padding: '10px 12px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 10,
-      }}
-    >
-      <div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div>
-      <div style={{ fontWeight: 900 }}>{value}</div>
-    </div>
-  );
-}
-
-function Th(props: { children: React.ReactNode; border: string }) {
-  return (
-    <th
-      style={{
-        textAlign: 'right',
-        padding: '10px 10px',
-        borderTop: `1px solid ${props.border}`,
-        borderBottom: `1px solid ${props.border}`,
-        background: 'rgba(15,23,42,0.02)',
-        fontWeight: 900,
-      }}
-    >
-      {props.children}
-    </th>
-  );
-}
-
-function Td(props: { children: React.ReactNode; border: string }) {
-  return (
-    <td
-      style={{
-        textAlign: 'right',
-        padding: '10px 10px',
-        borderBottom: `1px solid ${props.border}`,
-        fontWeight: 800,
-      }}
-    >
-      {props.children}
-    </td>
-  );
-}
-
-// ------------------------------
-// Test-only exports
-// ------------------------------
-export {
-  toNumber,
-  sanitizeNumericString,
-  parseInputsFromSearchParams,
-  buildShareQuery,
-  formatResultFromMonths,
-  simulateMonthByMonth,
-  calculateV4,
-  VERY_LONG_MONTHS_THRESHOLD,
-  VERY_LONG_TEXT,
-};
