@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Vazirmatn } from 'next/font/google';
-import Head from 'next/head';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { ReadonlyURLSearchParams } from 'next/navigation';
 
@@ -74,16 +73,11 @@ function toEnDigits(input: string) {
 }
 
 function sanitizeNumericString(raw: string) {
-  // keep digits + separators, remove letters
   const s = toEnDigits(raw ?? '')
     .replace(/[^\d.,\-]/g, '')
     .trim();
 
-  // allow only one minus at start
   const minusStripped = s.replace(/(?!^)-/g, '');
-
-  // normalize commas
-  // keep dots as decimal if user enters
   return minusStripped;
 }
 
@@ -91,7 +85,6 @@ function parseNumber(raw: string): ParsedNumber {
   const s = sanitizeNumericString(raw);
   if (!s) return null;
 
-  // remove thousand separators (commas)
   const normalized = s.replace(/,/g, '');
   const n = Number(normalized);
 
@@ -122,8 +115,6 @@ function safeGet(sp: ReadonlyURLSearchParams, key: string) {
 }
 
 function sanitizeQueryValue(v: string) {
-  // Keep short values to avoid huge URLs.
-  // Also remove line breaks.
   const cleaned = (v ?? '').replace(/[\r\n]+/g, ' ').trim();
   if (cleaned.length > 120) return cleaned.slice(0, 120);
   return cleaned;
@@ -135,7 +126,6 @@ function parseInputsFromSearchParams(sp: ReadonlyURLSearchParams): Partial<Input
   const inflationScenario = sp.get('inf');
   const savingScenario = sp.get('sav');
   const salaryScenario = sp.get('sal');
-
   const showDetails = sp.get('d');
 
   out.price = sanitizeQueryValue(safeGet(sp, 'p'));
@@ -144,13 +134,23 @@ function parseInputsFromSearchParams(sp: ReadonlyURLSearchParams): Partial<Input
 
   out.realizationPercent = sanitizeQueryValue(safeGet(sp, 'r'));
 
-  if (inflationScenario === 'low' || inflationScenario === 'base' || inflationScenario === 'high' || inflationScenario === 'custom') {
+  if (
+    inflationScenario === 'low' ||
+    inflationScenario === 'base' ||
+    inflationScenario === 'high' ||
+    inflationScenario === 'custom'
+  ) {
     out.inflationScenario = inflationScenario;
   }
 
   out.inflationCustom = sanitizeQueryValue(safeGet(sp, 'infc'));
 
-  if (savingScenario === 'bank' || savingScenario === 'value' || savingScenario === 'growth' || savingScenario === 'custom') {
+  if (
+    savingScenario === 'bank' ||
+    savingScenario === 'value' ||
+    savingScenario === 'growth' ||
+    savingScenario === 'custom'
+  ) {
     out.savingScenario = savingScenario;
   }
 
@@ -212,7 +212,6 @@ function calcMonthsToBuyHouse(params: {
   savingReturnYearly: number; // percent
   salaryGrowthYearly?: number; // percent
 }) {
-  // NOTE: This is whatever your original model is — untouched.
   const {
     price,
     currentSavings,
@@ -223,7 +222,6 @@ function calcMonthsToBuyHouse(params: {
     salaryGrowthYearly = 0,
   } = params;
 
-  // Guard
   if (!isFiniteNumber(price) || price <= 0) return { months: Infinity, details: [] as any[] };
   if (!isFiniteNumber(currentSavings) || currentSavings < 0) return { months: Infinity, details: [] as any[] };
   if (!isFiniteNumber(monthlySaving) || monthlySaving < 0) return { months: Infinity, details: [] as any[] };
@@ -244,19 +242,11 @@ function calcMonthsToBuyHouse(params: {
     monthlySaving: number;
   }> = [];
 
-  // hard safety cap
   const MAX_MONTHS = 1200; // 100y
   for (let month = 1; month <= MAX_MONTHS; month++) {
-    // house price inflation
     p *= 1 + infM;
-
-    // savings return
     s *= 1 + savM;
-
-    // add monthly saving
     s += m0;
-
-    // salary growth affects monthly saving baseline
     m0 *= 1 + salM;
 
     if (details.length < 240) {
@@ -271,10 +261,27 @@ function calcMonthsToBuyHouse(params: {
   return { months: Infinity, details };
 }
 
+/**
+ * ✅ App Router requirement:
+ * useSearchParams() must be inside Suspense boundary.
+ */
 export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <HomeBuyClient />
+    </Suspense>
+  );
+}
+
+function HomeBuyClient() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // title (safe in App Router client page)
+  useEffect(() => {
+    document.title = 'تخمین خرید خانه | تخمینو';
+  }, []);
 
   const [inputs, setInputs] = useState<Inputs>({
     price: '',
@@ -296,7 +303,6 @@ export default function Page() {
 
   // sync initial from URL
   useEffect(() => {
-    if (!searchParams) return;
     const parsed = parseInputsFromSearchParams(searchParams);
     if (Object.keys(parsed).length === 0) return;
     setInputs((prev) => ({ ...prev, ...parsed }));
@@ -306,9 +312,8 @@ export default function Page() {
   // update URL (debounced)
   const urlUpdateTimer = useRef<number | null>(null);
   useEffect(() => {
-    if (!searchParams) return;
-
     if (urlUpdateTimer.current) window.clearTimeout(urlUpdateTimer.current);
+
     urlUpdateTimer.current = window.setTimeout(() => {
       const sp = buildSearchParamsFromInputs(inputs);
       const next = sp.toString();
@@ -333,15 +338,7 @@ export default function Page() {
     const savCustom = parseNumber(inputs.savingCustom);
     const salCustom = parseNumber(inputs.salaryCustom ?? '');
 
-    return {
-      price,
-      s0,
-      m0,
-      r,
-      infCustom,
-      savCustom,
-      salCustom,
-    };
+    return { price, s0, m0, r, infCustom, savCustom, salCustom };
   }, [inputs]);
 
   const scenarioRates = useMemo(() => {
@@ -365,14 +362,9 @@ export default function Page() {
               ? parsedNums.savCustom ?? 20
               : 20;
 
-    const salaryGrowthYearly =
-      inputs.salaryScenario === 'custom' ? parsedNums.salCustom ?? 0 : 0;
+    const salaryGrowthYearly = inputs.salaryScenario === 'custom' ? parsedNums.salCustom ?? 0 : 0;
 
-    return {
-      inflationRateYearly,
-      savingReturnYearly,
-      salaryGrowthYearly,
-    };
+    return { inflationRateYearly, savingReturnYearly, salaryGrowthYearly };
   }, [inputs, parsedNums]);
 
   const result = useMemo(() => {
@@ -413,191 +405,188 @@ export default function Page() {
   }, [result]);
 
   return (
-    <>
-      <Head>
-        <title>تخمین خرید خانه | تخمینو</title>
-        <meta name="description" content="تخمین زمان خرید خانه با فرض شرایط فعلی" />
-      </Head>
-
-      <main className={vazirmatn.className} dir="rtl">
-        <div className="mx-auto max-w-3xl px-4 py-6">
-          <ToolHeader
-            icon={<Home className="h-5 w-5" />}
-            title="تخمین خرید خانه"
-            subtitle="اگر شرایط فعلی تغییر نکند"
-            helpText={
-              <div className="space-y-2 text-sm leading-7">
-                <p>این ابزار یک «تخمین» است و قطعیت ندارد.</p>
-                <p>
-                  خروجی بر اساس ورودی‌های شما و نرخ‌های انتخابی محاسبه می‌شود.
-                  اگر عدد خیلی بزرگ شد، یعنی فاصله‌ی قیمت خانه با توان پس‌انداز فعلی زیاد است.
-                </p>
-              </div>
-            }
-          />
-
-          {/* فرم */}
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-sm text-slate-700">قیمت خانه (تومان)</span>
-                <input
-                  value={inputs.price}
-                  onChange={(e) => setInputs((p) => ({ ...p, price: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
-                  inputMode="numeric"
-                  placeholder="مثلاً ۳٬۵۰۰٬۰۰۰٬۰۰۰"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm text-slate-700">پس‌انداز فعلی (تومان)</span>
-                <input
-                  value={inputs.currentSavings}
-                  onChange={(e) => setInputs((p) => ({ ...p, currentSavings: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
-                  inputMode="numeric"
-                  placeholder="مثلاً ۲۰۰٬۰۰۰٬۰۰۰"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm text-slate-700">پس‌انداز ماهانه (تومان)</span>
-                <input
-                  value={inputs.monthlySaving}
-                  onChange={(e) => setInputs((p) => ({ ...p, monthlySaving: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
-                  inputMode="numeric"
-                  placeholder="مثلاً ۱۵٬۰۰۰٬۰۰۰"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm text-slate-700">درصد تحقق (مثلاً پیش‌پرداخت) %</span>
-                <input
-                  value={inputs.realizationPercent}
-                  onChange={(e) => setInputs((p) => ({ ...p, realizationPercent: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
-                  inputMode="numeric"
-                  placeholder="مثلاً ۲۰"
-                />
-              </label>
+    <main className={vazirmatn.className} dir="rtl">
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        <ToolHeader
+          icon={<Home className="h-5 w-5" />}
+          title="تخمین خرید خانه"
+          subtitle="اگر شرایط فعلی تغییر نکند"
+          helpText={
+            <div className="space-y-2 text-sm leading-7">
+              <p>این ابزار یک «تخمین» است و قطعیت ندارد.</p>
+              <p>
+                خروجی بر اساس ورودی‌های شما و نرخ‌های انتخابی محاسبه می‌شود. اگر عدد خیلی بزرگ شد، یعنی فاصله‌ی قیمت
+                خانه با توان پس‌انداز فعلی زیاد است.
+              </p>
             </div>
+          }
+        />
 
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 p-3">
-                <div className="mb-2 text-sm font-semibold text-slate-800">سناریوی تورم خانه</div>
-                <select
-                  value={inputs.inflationScenario}
-                  onChange={(e) => setInputs((p) => ({ ...p, inflationScenario: e.target.value as InflationScenario }))}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                >
-                  <option value="low">کم (۲۰٪ سالانه)</option>
-                  <option value="base">معمولی (۳۰٪ سالانه)</option>
-                  <option value="high">زیاد (۵۰٪ سالانه)</option>
-                  <option value="custom">سفارشی</option>
-                </select>
-
-                {inputs.inflationScenario === 'custom' && (
-                  <div className="mt-2">
-                    <input
-                      value={inputs.inflationCustom}
-                      onChange={(e) => setInputs((p) => ({ ...p, inflationCustom: e.target.value }))}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                      inputMode="numeric"
-                      placeholder="مثلاً ۳۵"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-slate-200 p-3">
-                <div className="mb-2 text-sm font-semibold text-slate-800">سناریوی رشد پس‌انداز</div>
-                <select
-                  value={inputs.savingScenario}
-                  onChange={(e) => setInputs((p) => ({ ...p, savingScenario: e.target.value as SavingScenario }))}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                >
-                  <option value="bank">بانکی (۲۰٪ سالانه)</option>
-                  <option value="value">همگام ارزش (۳۰٪ سالانه)</option>
-                  <option value="growth">پرریسک‌تر (۴۰٪ سالانه)</option>
-                  <option value="custom">سفارشی</option>
-                </select>
-
-                {inputs.savingScenario === 'custom' && (
-                  <div className="mt-2">
-                    <input
-                      value={inputs.savingCustom}
-                      onChange={(e) => setInputs((p) => ({ ...p, savingCustom: e.target.value }))}
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2"
-                      inputMode="numeric"
-                      placeholder="مثلاً ۲۵"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
+        {/* فرم */}
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-1 block text-sm text-slate-700">قیمت خانه (تومان)</span>
               <input
-                type="checkbox"
-                checked={!!inputs.showDetails}
-                onChange={(e) => setInputs((p) => ({ ...p, showDetails: e.target.checked }))}
+                value={inputs.price}
+                onChange={(e) => setInputs((p) => ({ ...p, price: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                inputMode="numeric"
+                placeholder="مثلاً ۳٬۵۰۰٬۰۰۰٬۰۰۰"
               />
-              نمایش جزئیات
             </label>
-          </section>
 
-          {/* نتیجه */}
-          <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="text-sm text-slate-600">زمان تقریبی رسیدن</div>
-            <div className="mt-1 text-2xl font-extrabold text-slate-900">{headline}</div>
+            <label className="block">
+              <span className="mb-1 block text-sm text-slate-700">پس‌انداز فعلی (تومان)</span>
+              <input
+                value={inputs.currentSavings}
+                onChange={(e) => setInputs((p) => ({ ...p, currentSavings: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                inputMode="numeric"
+                placeholder="مثلاً ۲۰۰٬۰۰۰٬۰۰۰"
+              />
+            </label>
 
-            {result.ok ? (
-              <div className="mt-2 text-sm text-slate-600">
-                <span>درصد تحقق: </span>
-                <span className="font-semibold text-slate-800">{formatPercent(parseNumber(inputs.realizationPercent) ?? 20)}٪</span>
-                <span className="mx-2">•</span>
-                <span>تورم سالانه: </span>
-                <span className="font-semibold text-slate-800">{formatPercent(scenarioRates.inflationRateYearly)}٪</span>
-                <span className="mx-2">•</span>
-                <span>بازده پس‌انداز: </span>
-                <span className="font-semibold text-slate-800">{formatPercent(scenarioRates.savingReturnYearly)}٪</span>
-              </div>
-            ) : (
-              <div className="mt-2 text-sm text-rose-600">{result.message}</div>
-            )}
+            <label className="block">
+              <span className="mb-1 block text-sm text-slate-700">پس‌انداز ماهانه (تومان)</span>
+              <input
+                value={inputs.monthlySaving}
+                onChange={(e) => setInputs((p) => ({ ...p, monthlySaving: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                inputMode="numeric"
+                placeholder="مثلاً ۱۵٬۰۰۰٬۰۰۰"
+              />
+            </label>
 
-            {result.ok && inputs.showDetails && Array.isArray(result.details) && result.details.length > 0 && (
-              <div className="mt-4 overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="text-slate-600">
-                    <tr className="border-b">
-                      <th className="py-2 text-right font-semibold">ماه</th>
-                      <th className="py-2 text-right font-semibold">قیمت خانه</th>
-                      <th className="py-2 text-right font-semibold">پس‌انداز</th>
-                      <th className="py-2 text-right font-semibold">پس‌انداز ماهانه</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-slate-800">
-                    {result.details.slice(0, 120).map((row: any) => (
-                      <tr key={row.month} className="border-b last:border-b-0">
-                        <td className="py-2">{formatToman(row.month)}</td>
-                        <td className="py-2">{formatToman(row.housePrice)}</td>
-                        <td className="py-2">{formatToman(row.savings)}</td>
-                        <td className="py-2">{formatToman(row.monthlySaving)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="mt-2 text-xs text-slate-500">
-                  (برای سبک ماندن صفحه، جدول فقط بخشی از ماه‌ها را نشان می‌دهد.)
+            <label className="block">
+              <span className="mb-1 block text-sm text-slate-700">درصد تحقق (مثلاً پیش‌پرداخت) %</span>
+              <input
+                value={inputs.realizationPercent}
+                onChange={(e) => setInputs((p) => ({ ...p, realizationPercent: e.target.value }))}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-200"
+                inputMode="numeric"
+                placeholder="مثلاً ۲۰"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 p-3">
+              <div className="mb-2 text-sm font-semibold text-slate-800">سناریوی تورم خانه</div>
+              <select
+                value={inputs.inflationScenario}
+                onChange={(e) =>
+                  setInputs((p) => ({ ...p, inflationScenario: e.target.value as InflationScenario }))
+                }
+                className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              >
+                <option value="low">کم (۲۰٪ سالانه)</option>
+                <option value="base">معمولی (۳۰٪ سالانه)</option>
+                <option value="high">زیاد (۵۰٪ سالانه)</option>
+                <option value="custom">سفارشی</option>
+              </select>
+
+              {inputs.inflationScenario === 'custom' && (
+                <div className="mt-2">
+                  <input
+                    value={inputs.inflationCustom}
+                    onChange={(e) => setInputs((p) => ({ ...p, inflationCustom: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                    inputMode="numeric"
+                    placeholder="مثلاً ۳۵"
+                  />
                 </div>
-              </div>
-            )}
-          </section>
-        </div>
-      </main>
-    </>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-slate-200 p-3">
+              <div className="mb-2 text-sm font-semibold text-slate-800">سناریوی رشد پس‌انداز</div>
+              <select
+                value={inputs.savingScenario}
+                onChange={(e) =>
+                  setInputs((p) => ({ ...p, savingScenario: e.target.value as SavingScenario }))
+                }
+                className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              >
+                <option value="bank">بانکی (۲۰٪ سالانه)</option>
+                <option value="value">همگام ارزش (۳۰٪ سالانه)</option>
+                <option value="growth">پرریسک‌تر (۴۰٪ سالانه)</option>
+                <option value="custom">سفارشی</option>
+              </select>
+
+              {inputs.savingScenario === 'custom' && (
+                <div className="mt-2">
+                  <input
+                    value={inputs.savingCustom}
+                    onChange={(e) => setInputs((p) => ({ ...p, savingCustom: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                    inputMode="numeric"
+                    placeholder="مثلاً ۲۵"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={!!inputs.showDetails}
+              onChange={(e) => setInputs((p) => ({ ...p, showDetails: e.target.checked }))}
+            />
+            نمایش جزئیات
+          </label>
+        </section>
+
+        {/* نتیجه */}
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-sm text-slate-600">زمان تقریبی رسیدن</div>
+          <div className="mt-1 text-2xl font-extrabold text-slate-900">{headline}</div>
+
+          {result.ok ? (
+            <div className="mt-2 text-sm text-slate-600">
+              <span>درصد تحقق: </span>
+              <span className="font-semibold text-slate-800">
+                {formatPercent(parseNumber(inputs.realizationPercent) ?? 20)}٪
+              </span>
+              <span className="mx-2">•</span>
+              <span>تورم سالانه: </span>
+              <span className="font-semibold text-slate-800">{formatPercent(scenarioRates.inflationRateYearly)}٪</span>
+              <span className="mx-2">•</span>
+              <span>بازده پس‌انداز: </span>
+              <span className="font-semibold text-slate-800">{formatPercent(scenarioRates.savingReturnYearly)}٪</span>
+            </div>
+          ) : (
+            <div className="mt-2 text-sm text-rose-600">{result.message}</div>
+          )}
+
+          {result.ok && inputs.showDetails && Array.isArray(result.details) && result.details.length > 0 && (
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="text-slate-600">
+                  <tr className="border-b">
+                    <th className="py-2 text-right font-semibold">ماه</th>
+                    <th className="py-2 text-right font-semibold">قیمت خانه</th>
+                    <th className="py-2 text-right font-semibold">پس‌انداز</th>
+                    <th className="py-2 text-right font-semibold">پس‌انداز ماهانه</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-800">
+                  {result.details.slice(0, 120).map((row: any) => (
+                    <tr key={row.month} className="border-b last:border-b-0">
+                      <td className="py-2">{formatToman(row.month)}</td>
+                      <td className="py-2">{formatToman(row.housePrice)}</td>
+                      <td className="py-2">{formatToman(row.savings)}</td>
+                      <td className="py-2">{formatToman(row.monthlySaving)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="mt-2 text-xs text-slate-500">(برای سبک ماندن صفحه، جدول فقط بخشی از ماه‌ها را نشان می‌دهد.)</div>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
