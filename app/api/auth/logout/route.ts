@@ -15,7 +15,7 @@ function clearAuthCookie(res: NextResponse) {
 }
 
 export async function GET(req: NextRequest) {
-  const redirectTo = new URL("/login", req.url);
+  const redirectTo = new URL("/", req.url);
   const res = NextResponse.redirect(redirectTo, { status: 302 });
   clearAuthCookie(res);
   res.headers.set("cache-control", "no-store");
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const redirectTo = new URL("/login", req.url);
+  const redirectTo = new URL("/", req.url);
   const res = NextResponse.redirect(redirectTo, { status: 303 }); // 303 برای POST استانداردتره
   clearAuthCookie(res);
   res.headers.set("cache-control", "no-store");
