@@ -1,3 +1,4 @@
+// app/(light)/tools/page.tsx
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,19 +17,16 @@ import {
   Briefcase,
   ChevronLeft,
   Coins,
-  Command,
   Cpu,
   CreditCard,
   Gem,
   Globe,
   Home,
   Landmark,
-  Moon,
   Percent,
   PieChart,
   ShoppingCart,
   Sparkles,
-  Sun,
   Target,
   TrendingUp,
   Umbrella,
@@ -39,21 +37,21 @@ import {
   X,
   Banknote,
   BriefcaseBusiness,
-  Menu,
   ChevronDown,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import PublicHeader from '@/app/_shell/public/PublicHeader';
 
 // --- Global Styles (page-local) ---
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;800;900&family=Noto+Sans+Arabic:wght@300;400;600;700;800;900&family=Outfit:wght@400;700;900&display=swap');
-
   :root{
     --accent:#2563eb;
 
-    /* ترکیب فونت: Vazirmatn + Yekan (لوکال) + Noto Sans Arabic */
-    --font-body: "IRANYekan","Yekan","Vazirmatn","Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
-    --font-head: "Vazirmatn","IRANYekan","Yekan","Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;
-    --font-logo: "Outfit","Segoe UI",Tahoma,Arial,sans-serif;
+    /* ✅ همه‌جا فقط Vazirmatn (از next/font در app/layout.tsx) */
+    --font-body: var(--font-vazirmatn);
+    --font-head: var(--font-vazirmatn);
+    --font-logo: var(--font-vazirmatn);
   }
 
   html, body { font-family: var(--font-body); }
@@ -332,14 +330,6 @@ const TOOLS: Tool[] = [
   { id: 18, title: 'قدرت خرید', icon: ShoppingCart, category: 'اقتصاد', color: '#84cc16', desc: 'مقایسه قدرت خرید شما در دهه‌های مختلف.', popular: true, createdAt: '2025-04-02' },
 ];
 
-const TOP_MENU = [
-  { key: 'home', label: 'صفحه اصلی', href: '/' },
-  { key: 'tools', label: 'ابزارها', href: '/tools' },
-  { key: 'pricing', label: 'تعرفه‌ها', href: '/pricing' },
-  { key: 'blog', label: 'بلاگ', href: '/blog' },
-  { key: 'about', label: 'درباره ما', href: '/about' },
-] as const;
-
 const CATEGORY_ORDER = ['همه', 'مالی', 'شخصی', 'اقتصاد', 'کریپتو', 'سرمایه', 'بانکی', 'کار', 'بیزنس'] as const;
 
 const ORBIT_CAPS = [3, 6, 9] as const;
@@ -474,7 +464,6 @@ function CategoryDropdown({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="absolute z-[80] mt-2 w-full glass-menu rounded-2xl p-2"
             style={{
-              // ✅ کمی رنگ ملایم‌تر برای جلوگیری از قاطی شدن با کارت زیرش
               background: isDarkMode ? 'rgba(10,10,10,0.72)' : 'rgba(255,255,255,0.92)',
               border: isDarkMode ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.07)',
             }}
@@ -553,14 +542,13 @@ function CardFilterBar({
     <div
       className={
         isMobile
-          ? 'w-full' // ✅ بک‌گراند مستطیلی حذف شد
+          ? 'w-full'
           : 'glass-menu rounded-full px-2 py-2 inline-flex items-center'
       }
       style={{ maxWidth: '100%' }}
     >
       {isMobile ? (
         <div className="flex flex-col gap-3">
-          {/* Plate وسط‌چین */}
           <div className="w-full flex items-center justify-center gap-2 flex-wrap">
             <div className="plate">
               <QuickButton
@@ -592,12 +580,10 @@ function CardFilterBar({
             {showClear && <ClearButton onClick={onClear} />}
           </div>
 
-          {/* Dropdown دسته‌ها */}
           <CategoryDropdown category={category} setCategory={setCategory} isDarkMode={isDarkMode} />
         </div>
       ) : (
         <div className="flex items-center gap-2">
-          {/* Plate */}
           <div className="plate">
             <QuickButton
               label="محبوب‌ترین"
@@ -625,7 +611,6 @@ function CardFilterBar({
             />
           </div>
 
-          {/* پاکسازی */}
           {showClear && (
             <>
               <div className="divider" />
@@ -635,7 +620,6 @@ function CardFilterBar({
 
           <div className="divider" />
 
-          {/* دسته‌ها: padding برای جلوگیری از clip شدن چیپ آخر */}
           <div style={{ maxWidth: 'min(62vw, 820px)' }}>
             <div
               ref={catRef}
@@ -679,7 +663,8 @@ function CardFilterBar({
 }
 
 export default function Page() {
-  const [activeTop, setActiveTop] = useState<(typeof TOP_MENU)[number]['key']>('tools');
+  const router = useRouter();
+
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [cardCategory, setCardCategory] = useState<string>('همه');
@@ -706,7 +691,6 @@ export default function Page() {
     return () => window.removeEventListener('resize', compute);
   }, []);
 
-  // ✅ تعداد کارت‌ها طبق خواسته
   const MIN_MOBILE = 3;
   const STEP_MOBILE = 2;
   const MIN_DESKTOP = 8;
@@ -716,17 +700,6 @@ export default function Page() {
   useEffect(() => {
     setVisibleCount(isMobile ? MIN_MOBILE : MIN_DESKTOP);
   }, [isMobile]);
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [mobileMenuOpen]);
 
   const orbitWrapRef = useRef<HTMLDivElement | null>(null);
   const [orbitBox, setOrbitBox] = useState({ w: 360, h: 360 });
@@ -859,12 +832,15 @@ export default function Page() {
     ? { duration: 0.22, ease: 'easeOut' }
     : { type: 'spring', stiffness: 340, damping: 24 };
 
-  // ✅ warning رفع شد: canMore / canLess حذف شدند
   const minCount = isMobile ? MIN_MOBILE : MIN_DESKTOP;
   const step = isMobile ? STEP_MOBILE : STEP_DESKTOP;
 
   const onMore = () => setVisibleCount((v) => Math.min(cardsFiltered.length, v + step));
   const onLess = () => setVisibleCount((v) => Math.max(minCount, v - step));
+
+  const navigate = (href: string) => {
+    router.push(href);
+  };
 
   return (
     <div
@@ -886,127 +862,8 @@ export default function Page() {
         }}
       />
 
-      {/* ---------------- Header (Sticky) ---------------- */}
-      <header className="fixed top-0 w-full px-4 md:px-10 py-4 md:py-6 flex justify-between items-center z-[100]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-600 dark:bg-blue-900 flex items-center justify-center rounded-full shadow-lg border border-blue-500/20">
-            <Command className="w-5 h-5 text-white" />
-          </div>
-          <div className="font-logo text-lg md:text-2xl tracking-tighter" dir="ltr">
-            <span className={isDarkMode ? 'text-white/30' : 'text-slate-400'}>TAKH</span>
-            <span className="font-black text-blue-600 dark:text-blue-500">MINO</span>
-          </div>
-        </div>
 
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center justify-center">
-          <div className="glass-menu rounded-full px-3 py-2">
-            <div className="flex items-center gap-2">
-              {TOP_MENU.map((item) => {
-                const active = activeTop === item.key;
-                return (
-                  <a
-                    key={item.key}
-                    href={item.href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveTop(item.key);
-                    }}
-                    className={[
-                      'menu-item px-5 py-2 text-[12px] font-black',
-                      active ? 'menu-item--active' : 'opacity-80',
-                    ].join(' ')}
-                  >
-                    {item.label}
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-
-        {/* Right controls */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(true)}
-            className="lg:hidden w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center glass active:scale-95"
-            aria-label="open menu"
-          >
-            <Menu className="w-[18px] h-[18px]" />
-          </button>
-
-          <button
-            onClick={() => setIsDarkMode((v) => !v)}
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center glass active:scale-95"
-            type="button"
-            aria-label="toggle theme"
-          >
-            {isDarkMode ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px] text-slate-600" />}
-          </button>
-        </div>
-      </header>
-
-      {/* ---------------- Mobile Menu (Centered modal) ---------------- */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-[150] bg-black/40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileMenuOpen(false)}
-            />
-
-            <motion.div
-              className="fixed z-[160] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,420px)]"
-              initial={{ opacity: 0, scale: 0.96, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 16 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="glass-menu rounded-[28px] p-3">
-                <div className="flex items-center justify-between px-2 pb-2">
-                  <div className="text-sm font-black">منو</div>
-                  <button
-                    type="button"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-9 h-9 rounded-full glass flex items-center justify-center active:scale-95"
-                    aria-label="close menu"
-                  >
-                    <X className="w-4 h-4" strokeWidth={2.4} />
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-2 p-2">
-                  {TOP_MENU.map((item) => {
-                    const active = activeTop === item.key;
-                    return (
-                      <a
-                        key={item.key}
-                        href={item.href}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setActiveTop(item.key);
-                          setMobileMenuOpen(false);
-                        }}
-                        className={[
-                          'menu-item px-4 py-3 text-[12px] font-black',
-                          active ? 'menu-item--active' : 'opacity-85',
-                        ].join(' ')}
-                      >
-                        {item.label}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      
 
       {/* ---------------- Hero / Constellation ---------------- */}
       <main className="relative h-[100svh] overflow-hidden grid lg:grid-cols-2 px-4 md:px-10 lg:px-24 pt-20 md:pt-24 pb-24">
@@ -1145,6 +1002,11 @@ export default function Page() {
                 <button
                   className="mx-auto lg:mx-0 group relative px-8 py-4 md:px-10 md:py-5 bg-blue-600 dark:bg-blue-900 text-white rounded-full font-black text-[10px] md:text-xs flex items-center gap-3 overflow-hidden shadow-2xl transition-all active:scale-95"
                   type="button"
+                  onClick={() => {
+                    // همینجا فقط اسکرول/انکر ساده؛ فعلاً ناوبری را دست نمی‌زنیم
+                    const el = document.getElementById('tools-cards');
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                 >
                   <span className="relative">شروع</span>
                   <ChevronLeft className="w-4 h-4 md:w-[18px] md:h-[18px] relative group-hover:-translate-x-2 transition-transform" />
@@ -1156,7 +1018,7 @@ export default function Page() {
       </main>
 
       {/* ---------------- Cards list ---------------- */}
-      <section className="relative px-4 md:px-8 lg:px-12 xl:px-14 2xl:px-16 pb-24">
+      <section id="tools-cards" className="relative px-4 md:px-8 lg:px-12 xl:px-14 2xl:px-16 pb-24">
         <div className="cards-wrap mx-auto">
           <div className="flex items-end justify-between gap-4 flex-wrap mb-4 md:mb-6">
             <div>
@@ -1216,12 +1078,14 @@ export default function Page() {
                   <button
                     type="button"
                     className="w-full px-4 py-3 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-black text-[11px] md:text-xs active:scale-[0.99] transition"
+                    onClick={() => navigate('/tools')}
                   >
                     استفاده از ابزار
                   </button>
                   <button
                     type="button"
                     className={isDarkMode ? 'w-full text-[11px] md:text-xs font-bold opacity-50 hover:opacity-80 transition' : 'w-full text-[11px] md:text-xs font-bold text-slate-600 hover:text-slate-900 transition'}
+                    onClick={() => navigate('/tools')}
                   >
                     راهنمایی کامل ابزار
                   </button>
@@ -1230,7 +1094,6 @@ export default function Page() {
             ))}
           </div>
 
-          {/* ✅ More / Less buttons (both mobile & desktop) */}
           {(visibleCount < cardsFiltered.length || visibleCount > (isMobile ? MIN_MOBILE : MIN_DESKTOP)) && (
             <div className="flex justify-center mt-6 md:mt-8">
               <div className="flex items-center gap-2 flex-wrap justify-center">

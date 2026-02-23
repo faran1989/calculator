@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  password      String
+  name          String?
+  avatar        String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  profile       Profile?
+  toolRuns      ToolRun[]
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  financialScore  Int?
+  financialType   String?
+  totalToolRuns   Int      @default(0)
+  lastActiveAt    DateTime?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ToolRun {
+  id            String       @id @default(cuid())
+  userId        String
+  toolSlug      String
+  toolName      String
+  createdAt     DateTime     @default(now())
+
+  result        ToolResult?
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([toolSlug])
+}
+
+model ToolResult {
+  id          String    @id @default(cuid())
+  toolRunId   String    @unique
+  version     Int
+  rawData     String
+  summary     String?
+  createdAt   DateTime  @default(now())
+
+  toolRun     ToolRun   @relation(fields: [toolRunId], references: [id], onDelete: Cascade)
+}
