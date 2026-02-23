@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: body.email.toLowerCase().trim() },
-      select: { id: true, email: true, password: true },
+      select: { id: true, email: true, password: true, emailVerified: true },
     });
 
     if (!user) {
@@ -36,6 +36,12 @@ export async function POST(req: NextRequest) {
     }
 
     const ok = await bcrypt.compare(body.password, user.password);
+    if (ok && !user.emailVerified) {
+      return NextResponse.json(
+        { ok: false, error: "لطفاً ابتدا ایمیل خود را تأیید کنید. لینک تأیید به ایمیل شما ارسال شده است.", code: "EMAIL_NOT_VERIFIED" },
+        { status: 403 }
+      );
+    }
     if (!ok) {
       return NextResponse.json(
         { ok: false, error: "ایمیل یا رمز عبور اشتباه است." },

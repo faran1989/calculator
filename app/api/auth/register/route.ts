@@ -1,9 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { AUTH_COOKIE_NAME, signAuthToken } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { sendVerificationEmail } from "@/lib/email/resend";
 
 const BodySchema = z.object({
   email: z.string().email(),
@@ -23,7 +24,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = BodySchema.parse(await req.json());
-
     const normalizedEmail = body.email.toLowerCase().trim();
 
     const exists = await prisma.user.findUnique({
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         password: hashed,
         name: body.name ?? null,
+        emailVerified: false,
         profile: {
           create: {
             totalToolRuns: 0,
@@ -55,21 +56,23 @@ export async function POST(req: NextRequest) {
       select: { id: true, email: true },
     });
 
-    const token = await signAuthToken({ userId: user.id, email: user.email });
+    // Generate a secure random token (64 hex chars)
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    const res = NextResponse.json({ ok: true, user });
-
-    res.cookies.set({
-      name: AUTH_COOKIE_NAME,
-      value: token,
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+    await prisma.emailVerification.create({
+      data: { userId: user.id, token, expiresAt },
     });
 
-    return res;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const verifyUrl = `${appUrl}/verify-email?token=${token}`;
+
+    await sendVerificationEmail(user.email, verifyUrl);
+
+    return NextResponse.json({
+      ok: true,
+      message: "ایمیل تأییدیه ارسال شد. لطفاً صندوق ورودی خود را بررسی کنید.",
+    });
   } catch (e: any) {
     if (e?.name === "ZodError") {
       return NextResponse.json(

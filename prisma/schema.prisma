@@ -9,16 +9,29 @@ datasource db {
 }
 
 model User {
-  id            String      @id @default(cuid())
-  email         String      @unique
-  password      String
-  name          String?
-  avatar        String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                 String               @id @default(cuid())
+  email              String               @unique
+  password           String
+  name               String?
+  avatar             String?
+  emailVerified      Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
-  profile       Profile?
-  toolRuns      ToolRun[]
+  profile            Profile?
+  toolRuns           ToolRun[]
+  emailVerifications EmailVerification[]
+}
+
+model EmailVerification {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Profile {
