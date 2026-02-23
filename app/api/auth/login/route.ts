@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { ok: false, error: "خطای داخلی سرور." },
+      { ok: false, error: "خطای داخلی سرور.", _debug: e?.message ?? String(e) },
       { status: 500 }
     );
   }
