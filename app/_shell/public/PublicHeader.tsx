@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useSpring, useMotionValue, useReducedMotion } from 'framer-motion';
 import { Activity, Menu, X } from 'lucide-react';
+import AuthModal from './AuthModal';
 
 /* ─────────────────────────────────────────────
    ✅ Magnetic Hover (همان نسخه صفحه اصلی)
@@ -56,6 +57,7 @@ export default function PublicHeader() {
   const pathname = usePathname() || '/';
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
 
   const { scrollYProgress } = useScroll();
   const progressScaleX = useSpring(scrollYProgress, { stiffness: 120, damping: 20 });
@@ -145,14 +147,24 @@ export default function PublicHeader() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <MagneticWrapper strength={0.18}>
-              <Link
-                href="/account"
-                className="hidden sm:inline-flex bg-[#111827] text-white px-5 py-2 rounded-[16px] text-[13px] font-black hover:bg-[#059669] transition-all shadow-lg active:scale-95"
-              >
-                ثبت نام/ ورود
-              </Link>
-            </MagneticWrapper>
+            <div className="hidden sm:flex items-center gap-2">
+              <MagneticWrapper strength={0.18}>
+                <button
+                  onClick={() => setAuthModal('login')}
+                  className="inline-flex bg-white text-[#111827] border border-black/10 px-4 py-2 rounded-[16px] text-[13px] font-black hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                >
+                  ورود
+                </button>
+              </MagneticWrapper>
+              <MagneticWrapper strength={0.18}>
+                <button
+                  onClick={() => setAuthModal('register')}
+                  className="inline-flex bg-[#111827] text-white px-4 py-2 rounded-[16px] text-[13px] font-black hover:bg-[#059669] transition-all shadow-lg active:scale-95"
+                >
+                  ثبت‌نام
+                </button>
+              </MagneticWrapper>
+            </div>
 
             <button
               className="md:hidden p-2 text-gray-700"
@@ -223,19 +235,30 @@ export default function PublicHeader() {
                 );
               })}
 
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }}>
-                <Link
-                  href="/account"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="mt-6 inline-flex w-full justify-center bg-[#059669] text-white py-3 rounded-[18px] font-black text-sm shadow-2xl"
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mt-6 flex gap-3">
+                <button
+                  onClick={() => { setMobileMenuOpen(false); setAuthModal('login'); }}
+                  className="flex-1 py-3 rounded-[18px] font-black text-sm border border-black/10 bg-white text-[#111827]"
                 >
-                  ثبت نام/ ورود
-                </Link>
+                  ورود
+                </button>
+                <button
+                  onClick={() => { setMobileMenuOpen(false); setAuthModal('register'); }}
+                  className="flex-1 py-3 rounded-[18px] font-black text-sm bg-[#059669] text-white shadow-lg"
+                >
+                  ثبت‌نام
+                </button>
               </motion.div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      {authModal && (
+        <AuthModal
+          initialTab={authModal}
+          onClose={() => setAuthModal(null)}
+        />
+      )}
     </>
   );
 }
