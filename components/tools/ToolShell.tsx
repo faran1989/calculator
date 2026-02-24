@@ -2,8 +2,9 @@
 
 // components/tools/ToolShell.tsx
 // Ultra-premium shared template for all tools
+// SEO sections (method + FAQ) always in DOM — never hidden behind tabs
 
-import { ReactNode, useState, useRef, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ShieldCheck, Zap, Lock, ChevronDown, ExternalLink } from 'lucide-react';
@@ -25,28 +26,19 @@ export type FaqItem = {
 };
 
 type ToolShellProps = {
-  /** عنوان ابزار */
   title: string;
-  /** توضیح کوتاه */
   subtitle: string;
-  /** آیکون ابزار */
   icon?: ReactNode;
-  /** کلاس رنگ پس‌زمینه آیکون — مثال: 'bg-emerald-50 text-emerald-600' */
   iconBg?: string;
-  /** آمار hero — مثال: [{ label: 'استفاده', value: '۱۲,۰۰۰+' }] */
   stats?: { label: string; value: string }[];
-  /** محتوای اصلی ابزار (تب "ابزار") */
   children: ReactNode;
-  /** تب "روش محاسبه" — اختیاری */
   methodContent?: ReactNode;
-  /** سوالات متداول */
   faqItems?: FaqItem[];
-  /** ابزارهای مرتبط */
   relatedTools?: RelatedTool[];
 };
 
 /* ─────────────────────────────────────────────
-   FAQ Accordion Item
+   FAQ Accordion — always in DOM (SEO-safe)
 ───────────────────────────────────────────── */
 function FaqAccordion({ items }: { items: FaqItem[] }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -54,10 +46,7 @@ function FaqAccordion({ items }: { items: FaqItem[] }) {
   return (
     <div className="space-y-2">
       {items.map((item, i) => (
-        <div
-          key={i}
-          className="border border-black/6 rounded-2xl overflow-hidden bg-white"
-        >
+        <div key={i} className="border border-black/6 rounded-2xl overflow-hidden bg-white">
           <button
             onClick={() => setOpen(open === i ? null : i)}
             className="w-full flex items-center justify-between px-5 py-4 text-right"
@@ -116,10 +105,20 @@ function RelatedCard({ tool }: { tool: RelatedTool }) {
 }
 
 /* ─────────────────────────────────────────────
+   Section Header — divider + label
+───────────────────────────────────────────── */
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{label}</h2>
+      <div className="flex-1 h-px bg-black/5" />
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    Main ToolShell
 ───────────────────────────────────────────── */
-type Tab = 'tool' | 'method' | 'faq';
-
 const DEFAULT_STATS = [
   { value: 'رایگان', label: 'همیشه' },
   { value: 'شفاف', label: 'فرمول باز' },
@@ -137,66 +136,44 @@ export default function ToolShell({
   faqItems,
   relatedTools = [],
 }: ToolShellProps) {
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'tool', label: 'ابزار' },
-    ...(methodContent ? [{ key: 'method' as Tab, label: 'روش محاسبه' }] : []),
-    ...(faqItems?.length ? [{ key: 'faq' as Tab, label: 'سوالات متداول' }] : []),
-  ];
-
-  const [activeTab, setActiveTab] = useState<Tab>('tool');
-  const tabBarRef = useRef<HTMLDivElement>(null);
-  const [tabBarStuck, setTabBarStuck] = useState(false);
-
-  useEffect(() => {
-    const el = tabBarRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setTabBarStuck(!entry.isIntersecting),
-      { threshold: 1, rootMargin: '-85px 0px 0px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const hasSeoContent = !!methodContent || !!(faqItems?.length);
+  const hasBothSeoSections = !!methodContent && !!(faqItems?.length);
 
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-b from-slate-50/80 to-white">
 
       {/* ── HERO ─────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/40 pointer-events-none" />
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-emerald-100/30 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-12 left-12 w-48 h-48 rounded-full bg-teal-100/20 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-8 left-12 w-40 h-40 rounded-full bg-teal-100/20 blur-2xl pointer-events-none" />
 
-        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-8 pb-10">
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-6 pb-7">
           {/* Breadcrumb */}
           <Link
             href="/tools"
-            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-600 transition-colors mb-6 group"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-600 transition-colors mb-5 group"
           >
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
             همه ابزارها
           </Link>
 
-          <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-            {/* Icon */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {icon && (
-              <div className={`shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-black/5 ${iconBg}`}>
+              <div className={`shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-black/5 ${iconBg}`}>
                 {icon}
               </div>
             )}
 
-            {/* Title block */}
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight tracking-tight">
                 {title}
               </h1>
-              <p className="mt-2 text-slate-500 text-sm sm:text-base leading-relaxed max-w-2xl">
+              <p className="mt-1.5 text-slate-500 text-sm sm:text-base leading-relaxed max-w-2xl">
                 {subtitle}
               </p>
 
-              {/* Stats row */}
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {stats.map((s, i) => (
                   <div
                     key={i}
@@ -215,96 +192,53 @@ export default function ToolShell({
         </div>
       </div>
 
-      {/* ── STICKY TAB BAR ───────────────────────────────── */}
-      <div
-        ref={tabBarRef}
-        className={`sticky top-[68px] z-40 transition-all duration-200 ${
-          tabBarStuck
-            ? 'bg-white/90 backdrop-blur-xl border-b border-black/6 shadow-sm'
-            : 'bg-white/60 backdrop-blur-sm border-b border-black/4'
-        }`}
-      >
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <div className="flex items-center gap-1 h-12 relative">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`relative px-4 py-2 text-sm font-bold transition-colors rounded-lg ${
-                  activeTab === tab.key
-                    ? 'text-emerald-700'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-                {activeTab === tab.key && (
-                  <motion.div
-                    layoutId="tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* ── MAIN CONTENT ─────────────────────────────────── */}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-10">
 
-      {/* ── CONTENT AREA ─────────────────────────────────── */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
-        <AnimatePresence mode="wait">
-          {activeTab === 'tool' && (
-            <motion.div
-              key="tool"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-            >
-              {children}
-            </motion.div>
-          )}
+        {/* ── Tool (calculator / form) ── */}
+        <section>
+          {children}
+        </section>
 
-          {activeTab === 'method' && methodContent && (
-            <motion.div
-              key="method"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white rounded-3xl border border-black/5 shadow-sm p-6 sm:p-10"
-            >
-              {methodContent}
-            </motion.div>
-          )}
+        {/* ── SEO Sections (always in DOM, never JS-gated) ── */}
+        {hasSeoContent && (
+          <section>
+            {/* روی دسکتاپ: اگر هر دو بخش وجود دارند → side by side */}
+            <div className={hasBothSeoSections ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}>
 
-          {activeTab === 'faq' && faqItems?.length && (
-            <motion.div
-              key="faq"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2 }}
-            >
-              <FaqAccordion items={faqItems} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {/* روش محاسبه */}
+              {methodContent && (
+                <div>
+                  <SectionHeader label="روش محاسبه" />
+                  <div className="bg-white rounded-3xl border border-black/5 shadow-sm p-6">
+                    {methodContent}
+                  </div>
+                </div>
+              )}
 
-        {/* ── RELATED TOOLS ─────────────────────────────── */}
-        {relatedTools.length > 0 && (
-          <div className="mt-12 pt-8 border-t border-black/5">
-            <div className="flex items-center gap-3 mb-5">
-              <h2 className="text-sm font-black text-slate-400 uppercase tracking-wider">ابزارهای مرتبط</h2>
-              <div className="flex-1 h-px bg-black/5" />
+              {/* سوالات متداول */}
+              {faqItems?.length && (
+                <div>
+                  <SectionHeader label="سوالات متداول" />
+                  <FaqAccordion items={faqItems} />
+                </div>
+              )}
             </div>
+          </section>
+        )}
+
+        {/* ── Related Tools ── */}
+        {relatedTools.length > 0 && (
+          <section>
+            <SectionHeader label="ابزارهای مرتبط" />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {relatedTools.map((tool) => (
                 <RelatedCard key={tool.href} tool={tool} />
               ))}
             </div>
-          </div>
+          </section>
         )}
+
       </div>
     </div>
   );
