@@ -232,12 +232,21 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                 {loginLoading ? "در حال ورود..." : "ورود به حساب"}
               </button>
 
-              <p className="text-center text-sm text-slate-500 pt-1">
-                هنوز ثبت‌نام نکردی؟{" "}
-                <button type="button" onClick={() => setActiveTab("register")} className="text-emerald-600 font-semibold hover:text-emerald-700">
-                  شروع رایگان
-                </button>
-              </p>
+              <div className="flex items-center justify-between pt-1">
+                <a
+                  href="/forgot-password"
+                  onClick={onClose}
+                  className="text-sm text-slate-400 hover:text-emerald-600 transition-colors"
+                >
+                  فراموشی رمز؟
+                </a>
+                <p className="text-sm text-slate-500">
+                  هنوز ثبت‌نام نکردی؟{" "}
+                  <button type="button" onClick={() => setActiveTab("register")} className="text-emerald-600 font-semibold hover:text-emerald-700">
+                    شروع رایگان
+                  </button>
+                </p>
+              </div>
             </form>
           )}
 

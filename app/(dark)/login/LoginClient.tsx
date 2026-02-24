@@ -121,11 +121,10 @@ export default function LoginClient() {
               {loading ? "در حال ورود..." : "ورود"}
             </button>
 
-            <div className="flex items-center justify-between text-xs text-slate-300">
-              <Link href="/" className="hover:text-slate-100 underline">
-                صفحه اصلی
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <Link href="/forgot-password" className="hover:text-emerald-300 transition-colors">
+                رمز عبورت رو فراموش کردی؟
               </Link>
-
               <Link href="/register" className="hover:text-slate-100 underline">
                 هنوز ثبت‌نام نکرده‌اید؟
               </Link>

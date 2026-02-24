@@ -7,6 +7,8 @@ import { requireAuth } from "@/lib/auth/requireAuth";
 import { prisma } from "@/lib/prisma";
 import DashboardGuardClient from "./DashboardGuardClient";
 import NoBfcache from "./NoBfcache";
+import AvatarWithFallback from "@/components/AvatarWithFallback";
+import { getGravatarUrl } from "@/lib/gravatar";
 import { Activity, BarChart3, BookOpen, Calculator, ChevronLeft, Home, LogOut, Target, TrendingUp, User } from "lucide-react";
 
 type ToolRun = {
@@ -71,7 +73,7 @@ export default async function DashboardPage() {
   const [user, rows] = await Promise.all([
     prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { name: true, email: true, createdAt: true, profile: { select: { financialScore: true, financialType: true, totalToolRuns: true } } },
+      select: { name: true, email: true, avatar: true, createdAt: true, profile: { select: { financialScore: true, financialType: true, totalToolRuns: true } } },
     }),
     prisma.toolRun.findMany({
       where: { userId: auth.userId },
@@ -100,6 +102,7 @@ export default async function DashboardPage() {
   const financialType  = user?.profile?.financialType ?? null;
   const initials       = getInitials(user?.name, user?.email ?? auth.email);
   const displayName    = user?.name || auth.email.split("@")[0];
+  const gravatarUrl    = getGravatarUrl(auth.email, 72);
   const joinedDate     = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString("fa-IR", { year: "numeric", month: "long", day: "numeric" })
     : null;
@@ -131,9 +134,7 @@ export default async function DashboardPage() {
               <span className="text-sm font-bold text-slate-800">{displayName}</span>
               <span className="text-xs text-slate-400">{auth.email}</span>
             </div>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-black text-sm shadow-md">
-              {initials}
-            </div>
+            <AvatarWithFallback src={gravatarUrl} initials={initials} size={36} />
             <form action="/api/auth/logout" method="POST">
               <button
                 type="submit"

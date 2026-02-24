@@ -21,9 +21,21 @@ model User {
   profile            Profile?
   toolRuns           ToolRun[]
   emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
 }
 
 model EmailVerification {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordReset {
   id        String    @id @default(cuid())
   userId    String
   token     String    @unique
