@@ -6,82 +6,66 @@ function makeB64(payload: any) {
   return Buffer.from(json, "utf-8").toString("base64");
 }
 
-function isApiPath(pathname: string) {
-  return pathname.startsWith("/api/");
+const PROTECTED_PAGES = ["/dashboard"];
+const PROTECTED_APIS  = ["/api/tool-runs", "/api/auth/me", "/api/auth/change-password"];
+
+function isProtectedPage(pathname: string) {
+  return PROTECTED_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
+function isProtectedApi(pathname: string) {
+  return PROTECTED_APIS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
+
+const CLEAR_COOKIE = {
+  name: AUTH_COOKIE_NAME,
+  value: "",
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: 0,
+};
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const rawToken = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const payload  = rawToken ? await verifyAuthToken(rawToken) : null;
+  const hadBadToken = !!rawToken && !payload;
 
-  // اگر توکن نیست:
-  if (!token) {
-    // API خصوصی => 401
-    if (isApiPath(pathname)) {
+  // ── بدون توکن معتبر ──────────────────────────────────────────
+  if (!payload) {
+    if (isProtectedApi(pathname)) {
       const res = NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
       res.headers.set("cache-control", "no-store");
+      if (hadBadToken) res.cookies.set(CLEAR_COOKIE);
       return res;
     }
 
-    // صفحه خصوصی => redirect به login (با next برای برگشت بعد از login)
-    const loginUrl = req.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", pathname);
-    const res = NextResponse.redirect(loginUrl, { status: 302 });
-    res.headers.set("cache-control", "no-store");
-    res.headers.set("x-auth-user", "");
-    return res;
-  }
-
-  // توکن هست، verify
-  const payload = await verifyAuthToken(token);
-
-  if (!payload) {
-    // توکن نامعتبر/منقضی:
-    if (isApiPath(pathname)) {
-      const res = NextResponse.json({ ok: false, error: "INVALID_TOKEN" }, { status: 401 });
-      // کوکی رو پاک کن تا گیر نکنه
-      res.cookies.set({
-        name: AUTH_COOKIE_NAME,
-        value: "",
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 0,
-      });
+    if (isProtectedPage(pathname)) {
+      const loginUrl = req.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("next", pathname);
+      const res = NextResponse.redirect(loginUrl, { status: 302 });
       res.headers.set("cache-control", "no-store");
+      if (hadBadToken) res.cookies.set(CLEAR_COOKIE);
       return res;
     }
 
-    const loginUrl = req.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    loginUrl.searchParams.set("next", pathname);
-
-    const res = NextResponse.redirect(loginUrl, { status: 302 });
-    res.cookies.set({
-      name: AUTH_COOKIE_NAME,
-      value: "",
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 0,
-    });
-    res.headers.set("cache-control", "no-store");
-    res.headers.set("x-auth-user", "");
-    return res;
+    // صفحه عمومی — فقط pass through (بدون x-auth-user)
+    return NextResponse.next();
   }
 
-  // معتبر => ادامه بده + هدر x-auth-user برای Server Components
+  // ── توکن معتبر: x-auth-user رو برای همه صفحات set کن ────────
   const res = NextResponse.next();
   res.headers.set("x-auth-user", makeB64(payload));
   res.headers.set("cache-control", "no-store");
   return res;
 }
 
-// فقط مسیرهای خصوصی
+// همه صفحات و API ها — به جز فایل‌های استاتیک و Next.js internals
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/tool-runs/:path*", "/api/auth/me"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

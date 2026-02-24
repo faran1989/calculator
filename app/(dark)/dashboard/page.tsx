@@ -129,6 +129,22 @@ export default async function DashboardPage() {
             <span className="text-[#111827] font-black text-base tracking-tight hidden sm:block">تخمینو</span>
           </Link>
 
+          {/* Nav links */}
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-sm font-bold text-slate-500 hover:text-[#059669] transition-colors flex items-center gap-1.5">
+              <Home className="w-3.5 h-3.5" />
+              صفحه اصلی
+            </Link>
+            <Link href="/tools" className="text-sm font-bold text-slate-500 hover:text-[#059669] transition-colors flex items-center gap-1.5">
+              <Calculator className="w-3.5 h-3.5" />
+              ابزارها
+            </Link>
+            <Link href="/academy" className="text-sm font-bold text-slate-500 hover:text-[#059669] transition-colors flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" />
+              آکادمی
+            </Link>
+          </nav>
+
           {/* User + Logout */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex flex-col items-end leading-tight">

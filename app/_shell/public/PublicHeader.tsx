@@ -3,13 +3,26 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useScroll, useSpring, useMotionValue, useReducedMotion } from 'framer-motion';
-import { Activity, Menu, X } from 'lucide-react';
+import { Activity, Menu, X, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react';
 import AuthModal from './AuthModal';
 
 /* ─────────────────────────────────────────────
-   ✅ Magnetic Hover (همان نسخه صفحه اصلی)
+   Types
+───────────────────────────────────────────── */
+type AuthUser = {
+  email: string;
+  gravatarUrl: string;
+  initials: string;
+} | null;
+
+type Props = {
+  user?: AuthUser;
+};
+
+/* ─────────────────────────────────────────────
+   Magnetic Hover
 ───────────────────────────────────────────── */
 type MagneticWrapperProps = {
   children: React.ReactNode;
@@ -53,7 +66,116 @@ const MagneticWrapper = ({ children, strength = 0.18 }: MagneticWrapperProps) =>
   );
 };
 
-export default function PublicHeader() {
+/* ─────────────────────────────────────────────
+   Avatar (Gravatar with initials fallback)
+───────────────────────────────────────────── */
+function Avatar({ user, size = 36 }: { user: NonNullable<AuthUser>; size?: number }) {
+  const [imgError, setImgError] = useState(false);
+  return imgError ? (
+    <div
+      style={{ width: size, height: size }}
+      className="rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm select-none"
+    >
+      {user.initials}
+    </div>
+  ) : (
+    <img
+      src={user.gravatarUrl}
+      alt={user.email}
+      width={size}
+      height={size}
+      className="rounded-full object-cover"
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
+/* ─────────────────────────────────────────────
+   User Dropdown Menu
+───────────────────────────────────────────── */
+function UserMenu({ user }: { user: NonNullable<AuthUser> }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleLogout = async () => {
+    setOpen(false);
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
+    router.refresh();
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-[14px] hover:bg-black/5 transition-colors"
+        aria-expanded={open}
+        aria-haspopup="menu"
+      >
+        <Avatar user={user} size={32} />
+        <ChevronDown
+          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 top-full mt-2 w-52 bg-white/95 backdrop-blur-xl border border-black/8 rounded-2xl shadow-xl overflow-hidden z-50"
+            dir="rtl"
+          >
+            {/* User info */}
+            <div className="px-4 py-3 border-b border-black/6">
+              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            </div>
+
+            <div className="py-1.5">
+              <Link
+                href="/dashboard"
+                onClick={() => setOpen(false)}
+                role="menuitem"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                داشبورد
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                role="menuitem"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                خروج از حساب
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Main PublicHeader
+───────────────────────────────────────────── */
+export default function PublicHeader({ user = null }: Props) {
   const pathname = usePathname() || '/';
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -92,7 +214,6 @@ export default function PublicHeader() {
 
   return (
     <>
-      {/* nav کاملاً شفافه — فقط کادر pill داخلش پس‌زمینه داره */}
       <nav className="fixed top-3 left-0 right-0 z-[100] px-3 sm:px-5 flex justify-center">
         <motion.div
           layout
@@ -110,6 +231,7 @@ export default function PublicHeader() {
             }
           `}
         >
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-3 cursor-pointer group">
             <motion.div
               aria-hidden
@@ -122,6 +244,7 @@ export default function PublicHeader() {
             <span className="text-[#111827] font-black text-lg tracking-tighter">تخمینو</span>
           </Link>
 
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-9">
             {menuItems.map((item) => {
               const active = isActive(item.href);
@@ -146,26 +269,36 @@ export default function PublicHeader() {
             })}
           </div>
 
+          {/* Desktop CTA */}
           <div className="flex items-center gap-2.5">
-            <div className="hidden sm:flex items-center gap-2">
-              <MagneticWrapper strength={0.18}>
-                <button
-                  onClick={() => setAuthModal('login')}
-                  className="inline-flex bg-white text-[#111827] border border-black/10 px-4 py-2 rounded-[16px] text-[13px] font-black hover:bg-gray-50 transition-all shadow-sm active:scale-95"
-                >
-                  ورود
-                </button>
-              </MagneticWrapper>
-              <MagneticWrapper strength={0.18}>
-                <button
-                  onClick={() => setAuthModal('register')}
-                  className="inline-flex bg-[#111827] text-white px-4 py-2 rounded-[16px] text-[13px] font-black hover:bg-[#059669] transition-all shadow-lg active:scale-95"
-                >
-                  ثبت‌نام
-                </button>
-              </MagneticWrapper>
-            </div>
+            {user ? (
+              /* ── logged-in: avatar dropdown ── */
+              <div className="hidden sm:block">
+                <UserMenu user={user} />
+              </div>
+            ) : (
+              /* ── guest: login / register ── */
+              <div className="hidden sm:flex items-center gap-2">
+                <MagneticWrapper strength={0.18}>
+                  <button
+                    onClick={() => setAuthModal('login')}
+                    className="inline-flex bg-white text-[#111827] border border-black/10 px-4 py-2 rounded-[16px] text-[13px] font-black hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+                  >
+                    ورود
+                  </button>
+                </MagneticWrapper>
+                <MagneticWrapper strength={0.18}>
+                  <button
+                    onClick={() => setAuthModal('register')}
+                    className="inline-flex bg-[#111827] text-white px-4 py-2 rounded-[16px] text-[13px] font-black hover:bg-[#059669] transition-all shadow-lg active:scale-95"
+                  >
+                    ثبت‌نام
+                  </button>
+                </MagneticWrapper>
+              </div>
+            )}
 
+            {/* Mobile hamburger */}
             <button
               className="md:hidden p-2 text-gray-700"
               onClick={() => setMobileMenuOpen(true)}
@@ -177,6 +310,7 @@ export default function PublicHeader() {
             </button>
           </div>
 
+          {/* Scroll progress bar */}
           <motion.div
             className="absolute -bottom-2 right-0 h-[2px] bg-emerald-500 rounded-full"
             style={{ width: '100%', scaleX: progressScaleX, transformOrigin: 'right' }}
@@ -184,6 +318,7 @@ export default function PublicHeader() {
         </motion.div>
       </nav>
 
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -235,24 +370,62 @@ export default function PublicHeader() {
                 );
               })}
 
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mt-6 flex gap-3">
-                <button
-                  onClick={() => { setMobileMenuOpen(false); setAuthModal('login'); }}
-                  className="flex-1 py-3 rounded-[18px] font-black text-sm border border-black/10 bg-white text-[#111827]"
-                >
-                  ورود
-                </button>
-                <button
-                  onClick={() => { setMobileMenuOpen(false); setAuthModal('register'); }}
-                  className="flex-1 py-3 rounded-[18px] font-black text-sm bg-[#059669] text-white shadow-lg"
-                >
-                  ثبت‌نام
-                </button>
+              {/* Mobile auth section */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.22 }}
+                className="mt-6"
+              >
+                {user ? (
+                  /* ── logged-in mobile ── */
+                  <div className="flex flex-col gap-2" dir="rtl">
+                    <div className="flex items-center gap-3 px-2 py-2 mb-1">
+                      <Avatar user={user} size={40} />
+                      <span className="text-sm text-gray-600 truncate">{user.email}</span>
+                    </div>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 py-3 px-4 rounded-[18px] font-black text-sm bg-white border border-black/10 text-[#111827]"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-emerald-600" />
+                      داشبورد من
+                    </Link>
+                    <form action="/api/auth/logout" method="POST">
+                      <button
+                        type="submit"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full flex items-center gap-3 py-3 px-4 rounded-[18px] font-black text-sm bg-red-50 border border-red-100 text-red-600"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        خروج از حساب
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  /* ── guest mobile ── */
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); setAuthModal('login'); }}
+                      className="flex-1 py-3 rounded-[18px] font-black text-sm border border-black/10 bg-white text-[#111827]"
+                    >
+                      ورود
+                    </button>
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); setAuthModal('register'); }}
+                      className="flex-1 py-3 rounded-[18px] font-black text-sm bg-[#059669] text-white shadow-lg"
+                    >
+                      ثبت‌نام
+                    </button>
+                  </div>
+                )}
               </motion.div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
       {authModal && (
         <AuthModal
           initialTab={authModal}

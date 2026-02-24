@@ -2,6 +2,8 @@
 import type { ReactNode } from 'react';
 import PublicHeader from '@/app/_shell/public/PublicHeader';
 import PublicFooter from '@/app/_shell/public/PublicFooter';
+import { getAuthUser } from '@/lib/auth/server';
+import { getGravatarUrl } from '@/lib/gravatar';
 
 export type AppShellSurface = 'light' | 'dark';
 export type AppShellChrome = 'none' | 'public';
@@ -10,15 +12,10 @@ type AppShellProps = {
   surface: AppShellSurface;
   children: ReactNode;
   className?: string;
-
-  /**
-   * ✅ پیش‌فرض "none" است تا هیچ صفحه‌ای دوبار هدر/فوتر نگیرد.
-   * فقط layout ها chrome را روشن می‌کنند.
-   */
   chrome?: AppShellChrome;
 };
 
-export default function AppShell({
+export default async function AppShell({
   surface,
   children,
   className,
@@ -29,9 +26,20 @@ export default function AppShell({
       ? 'min-h-dvh bg-gray-950 text-gray-100'
       : 'min-h-dvh bg-[#F5F7F6] text-gray-900';
 
-  // ارتفاع هدر عمومی فعلی (تقریبی و قابل اصلاح)
-  // اگر بعداً هدر را تغییر دادی، فقط همین توکن را عوض می‌کنی.
   const publicHeaderOffset = 'pt-16 md:pt-20';
+
+  // فقط وقتی chrome="public" هست user رو می‌خونیم
+  let publicUser: { email: string; gravatarUrl: string; initials: string } | null = null;
+  if (chrome === 'public') {
+    const auth = await getAuthUser();
+    if (auth) {
+      publicUser = {
+        email: auth.email,
+        gravatarUrl: getGravatarUrl(auth.email, 40),
+        initials: auth.email[0].toUpperCase(),
+      };
+    }
+  }
 
   return (
     <div
@@ -40,7 +48,7 @@ export default function AppShell({
       data-chrome={chrome}
       className={[base, className].filter(Boolean).join(' ')}
     >
-      {chrome === 'public' && <PublicHeader />}
+      {chrome === 'public' && <PublicHeader user={publicUser} />}
 
       <main className={chrome === 'public' ? publicHeaderOffset : undefined}>
         {children}
