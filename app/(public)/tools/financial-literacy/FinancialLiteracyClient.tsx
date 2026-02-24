@@ -5,14 +5,7 @@ import { Vazirmatn } from 'next/font/google';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import {
-  Home,
   Grid,
-  BookOpen,
-  Info,
-  Facebook,
-  Instagram,
-  Twitter,
-  ChevronLeft,
   ChevronDown,
   ChevronUp,
   Target,
@@ -666,136 +659,6 @@ function buildExplainScoringText() {
 
 export default function FinancialLiteracyClient() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabKey>('tool');
-
-  // --- Hash Routing / History ---
-  const skipNextHashWriteRef = useRef(false);
-
-  const scrollToId = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const readHash = (): TabKey | null => {
-    const hash = (window.location.hash || '').replace('#', '').trim();
-    if (hash === 'about') return 'about';
-    if (hash === 'tool') return 'tool';
-    return null;
-  };
-
-  const writeHash = (next: TabKey, mode: 'replace' | 'push') => {
-    const nextHash = next === 'about' ? '#about' : '#tool';
-    if (window.location.hash === nextHash) return;
-
-    if (mode === 'push') history.pushState(null, '', nextHash);
-    else history.replaceState(null, '', nextHash);
-  };
-
-  const applyTabFromHash = (shouldScroll: boolean) => {
-    const tab = readHash();
-    if (!tab) return;
-
-    skipNextHashWriteRef.current = true;
-    setActiveTab(tab);
-
-    if (shouldScroll) {
-      requestAnimationFrame(() => {
-        if (tab === 'about') scrollToId('about');
-        else scrollToId('tool-main');
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (!readHash()) writeHash('tool', 'replace');
-
-    applyTabFromHash(true);
-
-    const onHashChange = () => applyTabFromHash(true);
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
-
-  useEffect(() => {
-    if (skipNextHashWriteRef.current) {
-      skipNextHashWriteRef.current = false;
-      return;
-    }
-    writeHash(activeTab, 'replace');
-  }, [activeTab]);
-
-  const menuItems = useMemo<MenuItem[]>(
-    () => [
-      { slug: 'home', href: toolConfig.navRoutes.home, label: 'تخمینو', icon: Home },
-      { slug: 'tools', href: toolConfig.navRoutes.tools, label: 'ابزارها', icon: Grid },
-      { slug: 'learn', href: toolConfig.navRoutes.learn, label: 'یاد بگیر', icon: BookOpen },
-      { slug: 'about', href: '#about', label: 'درباره', icon: Info },
-    ],
-    []
-  );
-
-  const onNavClick = (item: MenuItem) => (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const href = item.href;
-
-    if (href.startsWith('#')) {
-      e.preventDefault();
-
-      if (href === '#about') {
-        history.pushState(null, '', '#about');
-        skipNextHashWriteRef.current = true;
-        setActiveTab('about');
-        requestAnimationFrame(() => scrollToId('about'));
-        return;
-      }
-
-      if (href === '#tool') {
-        history.pushState(null, '', '#tool');
-        skipNextHashWriteRef.current = true;
-        setActiveTab('tool');
-        requestAnimationFrame(() => scrollToId('tool-main'));
-        return;
-      }
-
-      history.pushState(null, '', href);
-      return;
-    }
-
-    if (href.startsWith('/')) {
-      e.preventDefault();
-      router.push(href);
-      return;
-    }
-  };
-
-  const resolveRelatedHref = (slug: string, fallbackHref: string) => {
-    return toolConfig.relatedRouteMap[slug] || fallbackHref || '/tools';
-  };
-
-  const faqItems = useMemo<FaqItem[]>(() => {
-    const sec = toolConfig.aboutSections.find((s) => s.key === 'faq');
-    if (!sec || sec.type !== 'faq') return [];
-    return sec.items;
-  }, []);
-
-  const aboutCards = useMemo(() => {
-    return toolConfig.aboutSections.map((sec) => {
-      let body: React.ReactNode = null;
-
-      if (sec.type === 'text') {
-        body = <p className="text-slate-400 leading-7 text-[13px] sm:text-sm">{sec.text}</p>;
-      } else if (sec.type === 'faq') {
-        body = <FaqAccordion items={sec.items} />;
-      }
-
-      return {
-        id: `about-${sec.key}`,
-        key: sec.key,
-        title: sec.title,
-        body,
-      };
-    });
-  }, []);
 
   /* =========================
      Tool State (sessionStorage)
@@ -1138,47 +1001,63 @@ export default function FinancialLiteracyClient() {
   }, [hydrated, toolState.phase]);
 
   /* =========================
+     Auto-advance after feedback
+     ========================= */
+  const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (toolState.phase === 'feedback') {
+      autoAdvanceTimerRef.current = setTimeout(() => {
+        goNext();
+      }, 1500);
+    }
+    return () => {
+      if (autoAdvanceTimerRef.current) {
+        clearTimeout(autoAdvanceTimerRef.current);
+        autoAdvanceTimerRef.current = null;
+      }
+    };
+  }, [toolState.phase, goNext]);
+
+  /* =========================
      UI (Tool panel content)
      ========================= */
 
   const ToolPanel = () => {
-    // Loading guard for SSR hydration
+    const progressPct = Math.round((totalAnswered / totalQuestionsPlanned) * 100);
+
+    // Loading guard
     if (!hydrated) {
       return (
-        <div className="space-y-5 text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-inner">
-            <Grid className="text-blue-500" size={28} />
+        <div className="space-y-5 text-center py-8">
+          <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto border border-violet-100">
+            <Grid className="text-violet-500" size={28} />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">در حال آماده‌سازی...</h2>
-          <p className="text-slate-400 leading-7 text-[13px] sm:text-sm">یک لحظه صبر کن.</p>
+          <h2 className="text-xl font-black text-slate-800">در حال آماده‌سازی...</h2>
+          <p className="text-slate-500 text-sm leading-7">یک لحظه صبر کن.</p>
         </div>
       );
     }
 
-    // Intro
+    // Intro phase
     if (toolState.phase === 'intro') {
       return (
         <div className="space-y-6 text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-inner">
-            <Target className="text-blue-500" size={28} />
+          <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto border border-violet-100">
+            <Target className="text-violet-600" size={28} />
           </div>
-
-          <h2 className="text-xl sm:text-2xl font-black text-white">سنجش آگاهی مالی (تطبیقی)</h2>
-
-          <p className="text-slate-400 leading-7 text-[13px] sm:text-sm max-w-2xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-800">سنجش آگاهی مالی (تطبیقی)</h2>
+          <p className="text-slate-500 leading-7 text-sm max-w-2xl mx-auto">
             ۵ تا ۱۵ دقیقه وقت می‌گیرد. سؤال‌ها دسته‌بندی شده‌اند و سختی داخل هر دسته بر اساس پاسخ‌های خودت تطبیق می‌شود.
-            بعد از هر سؤال، توضیح کوتاه می‌بینی و اگر خواستی «بیشتر بدانم» را باز می‌کنی.
+            بعد از هر سؤال، توضیح کوتاه می‌بینی.
           </p>
 
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] px-4 sm:px-5 py-5 text-right max-w-2xl mx-auto">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 sm:px-5 py-5 text-right max-w-2xl mx-auto">
             <div className="flex items-center gap-3 mb-3">
-              <HelpCircle size={18} className="text-slate-500" />
-              <div className="font-bold text-[13px] sm:text-sm text-slate-200">
-                اختیاری: سطح خودت رو چطور می‌بینی؟
-              </div>
+              <HelpCircle size={18} className="text-slate-400" />
+              <div className="font-bold text-sm text-slate-700">اختیاری: سطح خودت رو چطور می‌بینی؟</div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { k: 'starter', t: 'تازه‌کار' },
                 { k: 'learning', t: 'در حال یادگیری' },
@@ -1191,15 +1070,15 @@ export default function FinancialLiteracyClient() {
                     key={it.k}
                     type="button"
                     onClick={() => applySelfLevel(it.k as PersistedState['selfLevel'])}
-                    className={`rounded-2xl border px-4 py-4 text-right transition-all active:scale-95 ${
+                    className={`rounded-2xl border px-4 py-3 text-right transition-all active:scale-95 ${
                       active
-                        ? 'border-blue-500/40 bg-blue-500/10 text-white'
-                        : 'border-white/5 bg-white/[0.02] text-slate-300 hover:border-blue-500/20'
+                        ? 'border-violet-500 bg-violet-50 text-violet-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300'
                     }`}
                   >
-                    <div className="font-black text-sm sm:text-base">{it.t}</div>
-                    <div className="text-[11px] text-slate-500 mt-1 leading-6">
-                      فقط برای شروع سختی. هر دسته بعداً تطبیق می‌شود.
+                    <div className="font-black text-sm">{it.t}</div>
+                    <div className="text-[11px] text-slate-400 mt-1 leading-5">
+                      فقط برای شروع سختی
                     </div>
                   </button>
                 );
@@ -1208,26 +1087,25 @@ export default function FinancialLiteracyClient() {
           </div>
 
           {canResume ? (
-            <div className="rounded-3xl border border-white/5 bg-white/[0.02] px-4 sm:px-5 py-5 text-right max-w-2xl mx-auto">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 sm:px-5 py-5 text-right max-w-2xl mx-auto">
               <div className="flex items-center gap-3">
-                <CheckCircle2 size={18} className="text-emerald-400" />
-                <div className="text-[13px] sm:text-sm text-slate-300 leading-7">
+                <CheckCircle2 size={18} className="text-emerald-500" />
+                <div className="text-sm text-slate-600 leading-7">
                   یک سنجش نیمه‌تمام پیدا شد. می‌خواهی ادامه بدهی یا از نو شروع کنیم؟
                 </div>
               </div>
-
               <div className="flex flex-col sm:flex-row gap-3 mt-4">
                 <button
                   type="button"
                   onClick={startOrResume}
-                  className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                  className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
                 >
                   ادامه از آخرین مرحله
                 </button>
                 <button
                   type="button"
                   onClick={resetAll}
-                  className="flex-1 px-6 py-4 bg-white/[0.02] hover:bg-white/[0.04] text-white rounded-2xl font-bold transition-all border border-white/5 active:scale-95"
+                  className="flex-1 px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 rounded-2xl font-bold transition-all border border-slate-200 active:scale-95"
                 >
                   شروع از نو
                 </button>
@@ -1238,13 +1116,13 @@ export default function FinancialLiteracyClient() {
           <button
             type="button"
             onClick={startOrResume}
-            className="mt-1 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+            className="px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
           >
             شروع سنجش
           </button>
 
-          <div className="text-[11px] text-slate-500 leading-6 max-w-2xl mx-auto">
-            این ابزار یک تخمین آموزشی است و هیچ توصیه مالی یا پیش‌بینی قطعی ارائه نمی‌کند. هیچ داده حساس از شما گرفته نمی‌شود.
+          <div className="text-[11px] text-slate-400 leading-6 max-w-2xl mx-auto">
+            این ابزار یک تخمین آموزشی است. هیچ توصیه مالی ارائه نمی‌کند و هیچ داده حساسی از شما گرفته نمی‌شود.
           </div>
         </div>
       );
@@ -1256,105 +1134,107 @@ export default function FinancialLiteracyClient() {
       const msg = categoryMiniInsight(currentCategory.title, currentCategoryScore);
 
       return (
-        <div className="space-y-6 text-right w-full max-w-4xl mx-auto">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-inner">
-            <Icon className="text-blue-500" size={28} />
+        <div className="space-y-5 text-right w-full max-w-3xl mx-auto">
+          {/* Progress */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-2 rounded-full bg-black/6 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="text-xs font-bold text-slate-400 shrink-0">{progressPct}٪</span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black text-white text-center">
-            جمع‌بندی دسته: {currentCategory.title}
-          </h2>
-
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="font-bold text-slate-200 text-sm sm:text-base">امتیاز این دسته</div>
-              <div className="text-white font-black text-xl sm:text-2xl">{currentCategoryScore}٪</div>
+          <div className="bg-white rounded-3xl border border-black/6 shadow-sm p-5 sm:p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
+                {React.createElement(Icon, { size: 20, className: 'text-violet-600' })}
+              </div>
+              <div>
+                <div className="text-xs text-slate-400">جمع‌بندی دسته</div>
+                <div className="font-black text-slate-800">{currentCategory.title}</div>
+              </div>
+              <div className="mr-auto text-2xl font-black text-violet-600">{currentCategoryScore}٪</div>
             </div>
-            <div className="mt-4 text-slate-400 leading-7 text-[13px] sm:text-sm">{msg}</div>
+            <div className="text-slate-500 text-sm leading-7 border-t border-slate-100 pt-4">{msg}</div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               onClick={continueAfterCategory}
-              className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+              className="flex-1 px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
             >
               ادامه دسته بعدی
             </button>
-
             <button
               type="button"
               onClick={resetAll}
-              className="flex-1 px-8 py-4 bg-white/[0.02] hover:bg-white/[0.04] text-white rounded-2xl font-bold transition-all border border-white/5 active:scale-95"
+              className="px-8 py-4 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl font-bold transition-all border border-slate-200 active:scale-95"
             >
               ریست
             </button>
           </div>
-
-          <div className="text-[11px] text-slate-500 text-center">زمان تقریبی باقی‌مانده: {formatMinutes(remainingMin)}</div>
+          <div className="text-[11px] text-slate-400 text-center">زمان تقریبی باقی‌مانده: {formatMinutes(remainingMin)}</div>
         </div>
       );
     }
 
-    // Results
+    // Results phase
     if (toolState.phase === 'results') {
       return (
         <div className="space-y-6 text-right w-full max-w-5xl mx-auto">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-inner">
-            <BarChart3 className="text-blue-500" size={28} />
+          <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto border border-violet-100">
+            <BarChart3 className="text-violet-600" size={28} />
           </div>
 
-          <div className="space-y-2 text-center">
-            <h2 className="text-xl sm:text-2xl font-black text-white">نتیجه سنجش آگاهی مالی</h2>
-            <div className="text-slate-400 text-[13px] sm:text-sm">
-              این نتیجه یک تخمین آموزشی است، نه توصیه مالی و نه تشخیص حرفه‌ای.
+          <div className="space-y-1 text-center">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-800">نتیجه سنجش آگاهی مالی</h2>
+            <div className="text-slate-400 text-sm">این نتیجه یک تخمین آموزشی است، نه توصیه مالی.</div>
+          </div>
+
+          {autoSaveStatus !== 'idle' && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-600 leading-7">
+              {autoSaveStatus === 'saving' && 'در حال ثبت نتیجه در داشبورد...'}
+              {autoSaveStatus === 'saved' && '✅ نتیجه با موفقیت در داشبورد ذخیره شد.'}
+              {autoSaveStatus === 'failed' && '⚠️ نتیجه ذخیره نشد (احتمالاً وارد حساب نشده‌ای). بعد از ورود، یک بار آزمون را تمام کن.'}
             </div>
-          </div>
+          )}
 
-          {/* وضعیت ذخیره خودکار */}
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] px-5 py-4 text-[13px] sm:text-sm text-slate-300 leading-7">
-            {autoSaveStatus === 'saving' && 'در حال ثبت نتیجه در داشبورد...'}
-            {autoSaveStatus === 'saved' && '✅ نتیجه با موفقیت در داشبورد ذخیره شد.'}
-            {autoSaveStatus === 'failed' &&
-              '⚠️ نتیجه ذخیره نشد (احتمالاً وارد حساب نشده‌ای). بعد از ورود، دوباره یک بار آزمون را تمام کن.'}
-            {autoSaveStatus === 'idle' && '—'}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-            <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* امتیاز */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
               <div className="flex items-center justify-between">
-                <div className="font-bold text-slate-200 text-sm sm:text-base">امتیاز نهایی</div>
-                <div className="text-white font-black text-2xl sm:text-3xl">{finalScore}٪</div>
+                <div className="font-bold text-slate-500 text-sm">امتیاز نهایی</div>
+                <div className="text-slate-800 font-black text-2xl sm:text-3xl">{finalScore}٪</div>
               </div>
-
               <div className="mt-4">
-                <div className="text-sm text-slate-400">سطح</div>
-                <div className="text-white font-black text-lg mt-1">{level.fa}</div>
-                <div className="text-[11px] text-slate-500 mt-1">{level.en}</div>
+                <div className="text-xs text-slate-400">سطح</div>
+                <div className="text-slate-800 font-black text-lg mt-1">{level.fa}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">{level.en}</div>
               </div>
-
-              <div className="mt-5 rounded-2xl border border-white/5 bg-slate-950/30 p-4">
+              <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-bold text-slate-200">اطمینان ارزیابی</div>
-                  <div className="text-sm font-black text-white">{confidence}٪</div>
+                  <div className="text-sm font-bold text-slate-600">اطمینان ارزیابی</div>
+                  <div className="text-sm font-black text-slate-800">{confidence}٪</div>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-2 leading-6">
-                  بر اساس تعداد سؤال‌ها + تنوع سختی‌ها (ساده و قابل توضیح).
+                <div className="text-[11px] text-slate-400 mt-2 leading-6">
+                  بر اساس تعداد سؤال‌ها + تنوع سختی‌ها.
                 </div>
               </div>
-
-              <div className="flex gap-3 mt-5">
+              <div className="flex gap-3 mt-4">
                 <button
                   type="button"
                   onClick={() => setShowExplainModal(true)}
-                  className="flex-1 px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] text-white rounded-2xl font-bold transition-all border border-white/5 active:scale-95 text-[13px] sm:text-sm"
+                  className="flex-1 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-2xl font-bold transition-all border border-slate-200 active:scale-95 text-sm"
                 >
-                  امتیاز چطور محاسبه شد؟
+                  نحوه محاسبه
                 </button>
                 <button
                   type="button"
                   onClick={resetAll}
-                  className="px-4 py-3 bg-white/[0.02] hover:bg-white/[0.04] text-white rounded-2xl font-bold transition-all border border-white/5 active:scale-95"
+                  className="px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-2xl transition-all border border-slate-200 active:scale-95"
                   aria-label="reset"
                 >
                   <RotateCcw size={18} />
@@ -1362,116 +1242,95 @@ export default function FinancialLiteracyClient() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6 lg:col-span-2">
+            {/* نمودارها */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 lg:col-span-2">
               <div className="flex items-center justify-between gap-4 mb-4">
-                <div className="font-bold text-slate-200">نقشه دسته‌ها</div>
-                <div className="text-[11px] text-slate-500">نمودارها در موبایل اسکرول افقی دارند.</div>
+                <div className="font-bold text-slate-700">نقشه دسته‌ها</div>
+                <div className="text-[11px] text-slate-400 hidden sm:block">در موبایل اسکرول افقی</div>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                <div className="rounded-2xl border border-white/5 bg-slate-950/30 p-4">
-                  <div className="text-xs font-bold text-slate-300 mb-3">Radar</div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="text-xs font-bold text-slate-400 mb-3">Radar</div>
                   <div className="overflow-x-auto">
-                    <div className="min-w-[520px] md:min-w-0" style={{ height: 320 }}>
+                    <div className="min-w-[260px] md:min-w-0" style={{ height: 260 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <RadarChart data={radarData}>
-                          <PolarGrid />
-                          <PolarAngleAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#64748b', fontSize: 11 }} />
-                          <Radar dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.25} />
+                          <PolarGrid stroke="#e2e8f0" />
+                          <PolarAngleAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} />
+                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                          <Radar dataKey="score" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.2} />
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
-
-                  <div className="mt-3 text-[11px] text-slate-500 leading-6">
-                    هر ضلع یک دسته است و فاصله از مرکز یعنی امتیاز بالاتر.
-                  </div>
                 </div>
-
-                <div className="rounded-2xl border border-white/5 bg-slate-950/30 p-4">
-                  <div className="text-xs font-bold text-slate-300 mb-3">Bar</div>
-
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="text-xs font-bold text-slate-400 mb-3">Bar</div>
                   <div className="overflow-x-auto">
-                    <div className="min-w-[560px] md:min-w-0" style={{ height: 320 }}>
+                    <div className="min-w-[260px] md:min-w-0" style={{ height: 260 }}>
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={barData} margin={{ left: 8, right: 8, top: 10, bottom: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="name"
-                            tick={{ fill: '#94a3b8', fontSize: 11 }}
-                            interval={0}
-                            height={70}
-                          />
-                          <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} domain={[0, 100]} />
+                        <BarChart data={barData} margin={{ left: 4, right: 4, top: 8, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9 }} interval={0} height={60} />
+                          <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} domain={[0, 100]} />
                           <Tooltip
-                            contentStyle={{
-                              background: 'rgba(2,6,23,0.9)',
-                              border: '1px solid rgba(255,255,255,0.06)',
-                            }}
-                            labelStyle={{ color: '#e2e8f0' }}
-                            itemStyle={{ color: '#e2e8f0' }}
+                            contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }}
+                            labelStyle={{ color: '#334155' }}
+                            itemStyle={{ color: '#334155' }}
                           />
-                          <Bar dataKey="score" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="score" fill="#7c3aed" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
-                  </div>
-
-                  <div className="mt-3 text-[11px] text-slate-500 leading-6">
-                    ستون‌ها مقایسه سریع امتیاز هر دسته را نشان می‌دهند.
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* باقی نتایج مثل قبل */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
-            <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
-              <div className="font-black text-white mb-4">نقاط قوت</div>
+          {/* نقاط قوت / رشد / تحلیل */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+              <div className="font-black text-slate-800 mb-4">نقاط قوت</div>
               {strengths.length ? (
                 <ul className="space-y-3">
                   {strengths.map((s) => (
                     <li key={s.key} className="flex items-start gap-3">
-                      <CheckCircle2 size={18} className="text-emerald-400 mt-0.5" />
+                      <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-bold text-slate-200">{s.title}</div>
-                        <div className="text-xs text-slate-500 mt-1">امتیاز: {s.score}٪</div>
+                        <div className="font-bold text-slate-700 text-sm">{s.title}</div>
+                        <div className="text-xs text-slate-400 mt-1">امتیاز: {s.score}٪</div>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div className="text-slate-500 text-[13px] sm:text-sm leading-7">
-                  هنوز نقطه قوت برجسته‌ای ثبت نشده. این طبیعی است—با چند تمرین هدفمند می‌توانیم سریع بهترش کنیم.
+                <div className="text-slate-400 text-sm leading-7">
+                  هنوز نقطه قوت برجسته‌ای ثبت نشده.
                 </div>
               )}
             </div>
-
-            <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
-              <div className="font-black text-white mb-4">حوزه‌های قابل رشد</div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+              <div className="font-black text-slate-800 mb-4">حوزه‌های قابل رشد</div>
               {growth.length ? (
                 <ul className="space-y-3">
                   {growth.map((g) => (
                     <li key={g.key} className="flex items-start gap-3">
-                      <XCircle size={18} className="text-amber-400 mt-0.5" />
+                      <XCircle size={18} className="text-amber-400 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-bold text-slate-200">{g.title}</div>
-                        <div className="text-xs text-slate-500 mt-1">امتیاز: {g.score}٪</div>
+                        <div className="font-bold text-slate-700 text-sm">{g.title}</div>
+                        <div className="text-xs text-slate-400 mt-1">امتیاز: {g.score}٪</div>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <div className="text-slate-500 text-[13px] sm:text-sm leading-7">همه دسته‌ها در وضعیت خوبی هستند. ادامه بده.</div>
+                <div className="text-slate-400 text-sm leading-7">همه دسته‌ها در وضعیت خوبی هستند.</div>
               )}
             </div>
-
-            <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
-              <div className="font-black text-white mb-4">تحلیل ترکیبی</div>
-              <div className="space-y-3 text-slate-400 text-[13px] sm:text-sm leading-7">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+              <div className="font-black text-slate-800 mb-4">تحلیل ترکیبی</div>
+              <div className="space-y-3 text-slate-500 text-sm leading-7">
                 {insights.map((t, idx) => (
                   <p key={idx}>{t}</p>
                 ))}
@@ -1479,64 +1338,53 @@ export default function FinancialLiteracyClient() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
-            <div className="font-black text-white mb-4">برنامه اقدام ۳ مرحله‌ای</div>
+          {/* برنامه اقدام */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="font-black text-slate-800 mb-4">برنامه اقدام ۳ مرحله‌ای</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {actionPlan.map((s, idx) => (
-                <div key={idx} className="rounded-2xl border border-white/5 bg-slate-950/30 p-5">
-                  <div className="font-black text-slate-200">{s.title}</div>
-                  <div className="text-slate-400 text-[13px] sm:text-sm leading-7 mt-2">{s.text}</div>
+                <div key={idx} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="font-black text-slate-700 text-sm">{s.title}</div>
+                  <div className="text-slate-500 text-sm leading-7 mt-2">{s.text}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-5 sm:p-6">
-            <div className="font-black text-white mb-4">تمرین پیشنهادی (CTA)</div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* تمرین پیشنهادی */}
+          <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6">
+            <div className="font-black text-slate-800 mb-4">تمرین پیشنهادی</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <a
                 href="/learn/inflation"
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push('/learn/inflation');
-                }}
-                className="rounded-2xl border border-white/5 bg-slate-950/30 p-5 hover:border-blue-500/30 transition-all"
+                onClick={(e) => { e.preventDefault(); router.push('/learn/inflation'); }}
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-300 hover:bg-violet-50 transition-all"
               >
-                <div className="font-bold text-slate-200">Learn</div>
-                <div className="text-[13px] sm:text-sm text-slate-400 mt-2">تورم چیست؟ (placeholder)</div>
-                <div className="text-[11px] text-slate-500 mt-2">برای تقویت «تورم/بازده واقعی»</div>
+                <div className="font-bold text-slate-700 text-sm">Learn</div>
+                <div className="text-sm text-slate-500 mt-1">تورم چیست؟</div>
+                <div className="text-[11px] text-slate-400 mt-1">تقویت «تورم/بازده واقعی»</div>
               </a>
-
               <a
                 href="/tools/purchasing-power"
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push('/tools/purchasing-power');
-                }}
-                className="rounded-2xl border border-white/5 bg-slate-950/30 p-5 hover:border-blue-500/30 transition-all"
+                onClick={(e) => { e.preventDefault(); router.push('/tools/purchasing-power'); }}
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-300 hover:bg-violet-50 transition-all"
               >
-                <div className="font-bold text-slate-200">Practice</div>
-                <div className="text-[13px] sm:text-sm text-slate-400 mt-2">قدرت خرید / تورم</div>
-                <div className="text-[11px] text-slate-500 mt-2">تست سناریوهای واقعی تورم</div>
+                <div className="font-bold text-slate-700 text-sm">Practice</div>
+                <div className="text-sm text-slate-500 mt-1">قدرت خرید / تورم</div>
+                <div className="text-[11px] text-slate-400 mt-1">تست سناریوهای واقعی</div>
               </a>
-
               <a
                 href="/tools/loan"
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.push('/tools/loan');
-                }}
-                className="rounded-2xl border border-white/5 bg-slate-950/30 p-5 hover:border-blue-500/30 transition-all"
+                onClick={(e) => { e.preventDefault(); router.push('/tools/loan'); }}
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-300 hover:bg-violet-50 transition-all"
               >
-                <div className="font-bold text-slate-200">Practice</div>
-                <div className="text-[13px] sm:text-sm text-slate-400 mt-2">قسط وام</div>
-                <div className="text-[11px] text-slate-500 mt-2">درک هزینه واقعی بدهی</div>
+                <div className="font-bold text-slate-700 text-sm">Practice</div>
+                <div className="text-sm text-slate-500 mt-1">قسط وام</div>
+                <div className="text-[11px] text-slate-400 mt-1">هزینه واقعی بدهی</div>
               </a>
             </div>
-
-            <div className="mt-5 text-[11px] text-slate-500 leading-6">
-              دیسکلایمر: این نتیجه یک تخمین تقریبی از سطح آگاهی مالی بر اساس پاسخ‌هاست؛ تشخیص حرفه‌ای یا توصیه مالی نیست.
+            <div className="mt-4 text-[11px] text-slate-400 leading-6">
+              دیسکلایمر: این نتیجه تخمین تقریبی آگاهی مالی است؛ تشخیص حرفه‌ای یا توصیه مالی نیست.
             </div>
           </div>
 
@@ -1551,45 +1399,39 @@ export default function FinancialLiteracyClient() {
                 role="dialog"
                 aria-modal="true"
               >
-                <div className="absolute inset-0 bg-black/60" onClick={() => setShowExplainModal(false)} aria-hidden="true" />
+                <div className="absolute inset-0 bg-black/40" onClick={() => setShowExplainModal(false)} aria-hidden="true" />
                 <motion.div
-                  initial={{ y: 16, opacity: 0, filter: 'blur(8px)' }}
-                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                  exit={{ y: 16, opacity: 0, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.25 }}
-                  className="relative w-full max-w-xl rounded-3xl border border-white/10 bg-slate-950/80 backdrop-blur-2xl shadow-2xl p-5 sm:p-6 text-right"
+                  initial={{ y: 16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 16, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white shadow-2xl p-5 sm:p-6 text-right"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="font-black text-white">امتیاز چطور محاسبه شد؟</div>
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="font-black text-slate-800">نحوه محاسبه امتیاز</div>
                     <button
                       type="button"
                       onClick={() => setShowExplainModal(false)}
-                      className="w-10 h-10 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 flex items-center justify-center transition-all"
+                      className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center transition-all"
                       aria-label="close"
                     >
-                      <ChevronDown className="rotate-90 text-slate-300" size={18} />
+                      <ChevronDown className="rotate-90 text-slate-500" size={16} />
                     </button>
                   </div>
-
-                  <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4">
-                    <ul className="space-y-2 text-[13px] sm:text-sm text-slate-300 leading-7">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <ul className="space-y-1.5 text-sm text-slate-600 leading-7">
                       {explainLines.map((l, idx) => (
-                        <li key={idx} className="text-slate-300">
-                          {l}
-                        </li>
+                        <li key={idx}>{l}</li>
                       ))}
                     </ul>
                   </div>
-
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowExplainModal(false)}
-                      className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all active:scale-95"
-                    >
-                      متوجه شدم
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowExplainModal(false)}
+                    className="w-full mt-4 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
+                  >
+                    متوجه شدم
+                  </button>
                 </motion.div>
               </motion.div>
             )}
@@ -1605,15 +1447,15 @@ export default function FinancialLiteracyClient() {
     if (!q) {
       return (
         <div className="space-y-6 text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4 border border-blue-500/20 shadow-inner">
-            <Grid className="text-blue-500" size={28} />
+          <div className="w-16 h-16 rounded-3xl bg-slate-50 flex items-center justify-center mx-auto border border-slate-200">
+            <Grid className="text-slate-400" size={28} />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white">یک لحظه...</h2>
-          <p className="text-slate-400 leading-7 text-[13px] sm:text-sm">در حال آماده‌سازی سؤال بعدی.</p>
+          <h2 className="text-xl font-black text-slate-800">یک لحظه...</h2>
+          <p className="text-slate-500 text-sm leading-7">در حال آماده‌سازی سؤال بعدی.</p>
           <button
             type="button"
             onClick={goNext}
-            className="mt-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+            className="px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
           >
             ادامه
           </button>
@@ -1624,80 +1466,71 @@ export default function FinancialLiteracyClient() {
     const isFeedback = toolState.phase === 'feedback';
     const chosen = toolState.lastChosenIndex;
     const correct = q.correctIndex;
-
     const answeredCountInCat = getCategoryQuestionCount(toolState.answered, currentCategory.key);
     const catTotal = currentCategory.questionsToAsk;
-
-    const progressPct = Math.round((totalAnswered / totalQuestionsPlanned) * 100);
-
-    const canChangeLevelNow = totalAnswered === 0; // دقیقاً همان مشکلی که گفتی
+    const canChangeLevelNow = totalAnswered === 0;
 
     return (
-      <div className="space-y-6 text-right w-full max-w-4xl mx-auto">
-        {/* top meta */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              {React.createElement(catIcon, { size: 21, className: 'text-blue-500' })}
-            </div>
-            <div>
-              <div className="font-black text-white">{currentCategory.title}</div>
-              <div className="text-[11px] text-slate-500 mt-1 leading-6">
-                سؤال {answeredCountInCat + (isFeedback ? 0 : 1)} از {catTotal} • زمان باقی‌مانده: {formatMinutes(remainingMin)}
-              </div>
-            </div>
+      <div className="space-y-4 text-right w-full max-w-3xl mx-auto">
+        {/* Progress bar */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 rounded-full bg-black/6 overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
-
-          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-3">
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] px-4 py-3 flex-1">
-              <div className="flex items-center justify-between gap-4">
-                <div className="text-xs text-slate-500">پیشرفت کل</div>
-                <div className="text-xs font-black text-slate-200">{progressPct}٪</div>
-              </div>
-              <div className="h-2 rounded-full bg-white/5 mt-2 overflow-hidden">
-                <div className="h-full bg-blue-500/60" style={{ width: `${progressPct}%` }} />
-              </div>
-            </div>
-
-            {canChangeLevelNow ? (
-              <button
-                type="button"
-                onClick={backToLevelSelectIfNoAnswerYet}
-                className="px-4 py-3 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] text-white font-bold transition-all active:scale-95"
-              >
-                تغییر سطح
-              </button>
-            ) : null}
-          </div>
+          <span className="text-xs font-bold text-slate-400 shrink-0">{progressPct}٪</span>
+          {canChangeLevelNow && (
+            <button
+              type="button"
+              onClick={backToLevelSelectIfNoAnswerYet}
+              className="text-xs font-bold text-slate-400 hover:text-violet-600 transition-colors shrink-0 underline underline-offset-2"
+            >
+              تغییر سطح
+            </button>
+          )}
         </div>
 
-        {encouragement ? (
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] px-5 py-4 text-slate-300 text-[13px] sm:text-sm leading-7">
-            {encouragement}
-          </div>
-        ) : null}
-
-        {/* question card */}
-        <div className="rounded-3xl border border-white/5 bg-white/[0.02] p-4 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="font-black text-white leading-8 text-[15px] sm:text-base">{q.text}</div>
-            <div className="text-[11px] text-slate-500 whitespace-nowrap">
-              سختی: {q.difficulty} • وزن: {difficultyWeight[q.difficulty].toFixed(1)}
+        {/* Question card */}
+        <div className="bg-white rounded-3xl border border-black/6 shadow-sm overflow-hidden">
+          {/* Category header */}
+          <div className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b border-black/5 bg-slate-50">
+            <div className="w-8 h-8 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+              {React.createElement(catIcon, { size: 16, className: 'text-violet-600' })}
             </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-bold text-slate-700 text-sm">{currentCategory.title}</span>
+              <span className="text-slate-400 text-xs mr-2">
+                • سؤال {answeredCountInCat + (isFeedback ? 0 : 1)} از {catTotal}
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-400 shrink-0">{formatMinutes(remainingMin)} باقی</div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-5">
+          {/* Encouragement */}
+          {encouragement && (
+            <div className="mx-4 sm:mx-5 mt-4 rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-emerald-700 text-xs leading-6">
+              {encouragement}
+            </div>
+          )}
+
+          {/* Question text */}
+          <div className="px-4 sm:px-5 pt-4 pb-3">
+            <div className="font-black text-slate-800 leading-8 text-base sm:text-lg">{q.text}</div>
+          </div>
+
+          {/* Options */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 px-4 sm:px-5 pb-4">
             {q.options.map((opt, idx) => {
               const isChosen = chosen === idx;
               const isCorrectOpt = correct === idx;
-
-              const base = 'rounded-2xl border px-4 py-3 sm:py-4 text-right transition-all active:scale-95';
-              let cls = 'border-white/5 bg-slate-950/30 text-slate-200 hover:border-blue-500/20';
+              let cls = 'border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-violet-50';
 
               if (isFeedback) {
-                if (isCorrectOpt) cls = 'border-emerald-500/30 bg-emerald-500/10 text-white';
-                else if (isChosen && !isCorrectOpt) cls = 'border-rose-500/30 bg-rose-500/10 text-white';
-                else cls = 'border-white/5 bg-white/[0.02] text-slate-400';
+                if (isCorrectOpt) cls = 'border-emerald-300 bg-emerald-50 text-emerald-800';
+                else if (isChosen && !isCorrectOpt) cls = 'border-rose-300 bg-rose-50 text-rose-700';
+                else cls = 'border-slate-100 bg-slate-50 text-slate-400';
               }
 
               return (
@@ -1706,60 +1539,66 @@ export default function FinancialLiteracyClient() {
                   type="button"
                   disabled={isFeedback}
                   onClick={() => answerQuestion(idx)}
-                  className={`${base} ${cls}`}
+                  className={`rounded-2xl border px-4 py-3 text-right transition-all active:scale-[0.98] ${cls}`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5">
+                  <div className="flex items-center gap-3">
+                    <div className="shrink-0">
                       {isFeedback ? (
                         isCorrectOpt ? (
-                          <CheckCircle2 size={18} className="text-emerald-300" />
+                          <CheckCircle2 size={18} className="text-emerald-500" />
                         ) : isChosen ? (
-                          <XCircle size={18} className="text-rose-300" />
+                          <XCircle size={18} className="text-rose-400" />
                         ) : (
                           <div className="w-[18px] h-[18px]" />
                         )
                       ) : (
-                        <div className="w-6 h-6 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-xs text-slate-400">
+                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-500 font-bold shrink-0">
                           {idx + 1}
                         </div>
                       )}
                     </div>
-                    <div className="text-[13px] sm:text-sm font-bold leading-7">{opt}</div>
+                    <div className="text-sm font-medium leading-6 text-right flex-1">{opt}</div>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* feedback */}
-          {isFeedback ? (
-            <div className="mt-5 rounded-2xl border border-white/5 bg-slate-950/30 p-5">
-              <div className="flex items-center gap-3">
+          {/* Feedback */}
+          {isFeedback && (
+            <div className="mx-4 sm:mx-5 mb-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div className="flex items-center gap-2.5">
                 {chosen === correct ? (
                   <>
-                    <CheckCircle2 size={18} className="text-emerald-400" />
-                    <div className="font-black text-white">درست</div>
+                    <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
+                    <div className="font-black text-emerald-700">درست</div>
                   </>
                 ) : (
                   <>
-                    <XCircle size={18} className="text-rose-400" />
-                    <div className="font-black text-white">اشتباه</div>
+                    <XCircle size={18} className="text-rose-500 shrink-0" />
+                    <div className="font-black text-rose-700">اشتباه</div>
                   </>
                 )}
+                <div className="mr-auto">
+                  <button
+                    type="button"
+                    onClick={() => { if (autoAdvanceTimerRef.current) { clearTimeout(autoAdvanceTimerRef.current); autoAdvanceTimerRef.current = null; } goNext(); }}
+                    className="text-xs font-bold text-slate-400 hover:text-violet-600 transition-colors"
+                  >
+                    سؤال بعدی ←
+                  </button>
+                </div>
               </div>
-
-              <div className="mt-3 text-slate-300 text-[13px] sm:text-sm leading-7">{q.explanationShort}</div>
-
-              {q.explanationMore ? (
-                <div className="mt-4">
+              <div className="mt-2.5 text-slate-600 text-sm leading-7">{q.explanationShort}</div>
+              {q.explanationMore && (
+                <div className="mt-3">
                   <button
                     type="button"
                     onClick={() => setShowMore((s) => !s)}
-                    className="text-[13px] sm:text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors"
+                    className="text-sm font-bold text-violet-600 hover:text-violet-500 transition-colors"
                   >
                     {showMore ? 'بستن توضیح بیشتر' : 'بیشتر بدانم'}
                   </button>
-
                   <AnimatePresence initial={false}>
                     {showMore && (
                       <motion.div
@@ -1769,33 +1608,12 @@ export default function FinancialLiteracyClient() {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                       >
-                        <div className="mt-3 text-slate-400 text-[13px] sm:text-sm leading-7">{q.explanationMore}</div>
+                        <div className="mt-2.5 text-slate-500 text-sm leading-7">{q.explanationMore}</div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-              ) : null}
-
-              <div className="flex flex-col sm:flex-row gap-3 mt-5">
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="flex-1 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
-                >
-                  سؤال بعدی
-                </button>
-                <button
-                  type="button"
-                  onClick={resetAll}
-                  className="px-6 py-4 bg-white/[0.02] hover:bg-white/[0.04] text-white rounded-2xl font-bold transition-all border border-white/5 active:scale-95"
-                >
-                  ریست
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-5 text-[11px] text-slate-500 leading-6">
-              نکته: این سنجش داخل هر دسته سختی را تطبیق می‌دهد. با پاسخ درست، سؤال‌های بعدی همان دسته چالشی‌تر می‌شوند.
+              )}
             </div>
           )}
         </div>
