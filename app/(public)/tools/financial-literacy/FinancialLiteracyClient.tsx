@@ -1030,8 +1030,8 @@ export default function FinancialLiteracyClient() {
     if (!hydrated) {
       return (
         <div className="space-y-5 text-center py-8">
-          <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto border border-violet-100">
-            <Grid className="text-violet-500" size={28} />
+          <div className="w-16 h-16 rounded-3xl bg-emerald-50 flex items-center justify-center mx-auto border border-emerald-100">
+            <Grid className="text-emerald-500" size={28} />
           </div>
           <h2 className="text-xl font-black text-slate-800">در حال آماده‌سازی...</h2>
           <p className="text-slate-500 text-sm leading-7">یک لحظه صبر کن.</p>
@@ -1043,8 +1043,8 @@ export default function FinancialLiteracyClient() {
     if (toolState.phase === 'intro') {
       return (
         <div className="space-y-6 text-center">
-          <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto border border-violet-100">
-            <Target className="text-violet-600" size={28} />
+          <div className="w-16 h-16 rounded-3xl bg-emerald-50 flex items-center justify-center mx-auto border border-emerald-100">
+            <Target className="text-emerald-600" size={28} />
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-slate-800">سنجش آگاهی مالی (تطبیقی)</h2>
           <p className="text-slate-500 leading-7 text-sm max-w-2xl mx-auto">
@@ -1072,8 +1072,8 @@ export default function FinancialLiteracyClient() {
                     onClick={() => applySelfLevel(it.k as PersistedState['selfLevel'])}
                     className={`rounded-2xl border px-4 py-3 text-right transition-all active:scale-95 ${
                       active
-                        ? 'border-violet-500 bg-violet-50 text-violet-700'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300'
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300'
                     }`}
                   >
                     <div className="font-black text-sm">{it.t}</div>
@@ -1098,7 +1098,7 @@ export default function FinancialLiteracyClient() {
                 <button
                   type="button"
                   onClick={startOrResume}
-                  className="flex-1 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
+                  className="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all active:scale-95"
                 >
                   ادامه از آخرین مرحله
                 </button>
@@ -1116,7 +1116,7 @@ export default function FinancialLiteracyClient() {
           <button
             type="button"
             onClick={startOrResume}
-            className="px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
+            className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all active:scale-95"
           >
             شروع سنجش
           </button>
@@ -1148,14 +1148,14 @@ export default function FinancialLiteracyClient() {
 
           <div className="bg-white rounded-3xl border border-black/6 shadow-sm p-5 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center">
-                {React.createElement(Icon, { size: 20, className: 'text-violet-600' })}
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                {React.createElement(Icon, { size: 20, className: 'text-emerald-600' })}
               </div>
               <div>
                 <div className="text-xs text-slate-400">جمع‌بندی دسته</div>
                 <div className="font-black text-slate-800">{currentCategory.title}</div>
               </div>
-              <div className="mr-auto text-2xl font-black text-violet-600">{currentCategoryScore}٪</div>
+              <div className="mr-auto text-2xl font-black text-emerald-600">{currentCategoryScore}٪</div>
             </div>
             <div className="text-slate-500 text-sm leading-7 border-t border-slate-100 pt-4">{msg}</div>
           </div>
@@ -1164,7 +1164,7 @@ export default function FinancialLiteracyClient() {
             <button
               type="button"
               onClick={continueAfterCategory}
-              className="flex-1 px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
+              className="flex-1 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all active:scale-95"
             >
               ادامه دسته بعدی
             </button>
@@ -1185,8 +1185,8 @@ export default function FinancialLiteracyClient() {
     if (toolState.phase === 'results') {
       return (
         <div className="space-y-6 text-right w-full max-w-5xl mx-auto">
-          <div className="w-16 h-16 rounded-3xl bg-violet-50 flex items-center justify-center mx-auto border border-violet-100">
-            <BarChart3 className="text-violet-600" size={28} />
+          <div className="w-16 h-16 rounded-3xl bg-emerald-50 flex items-center justify-center mx-auto border border-emerald-100">
+            <BarChart3 className="text-emerald-600" size={28} />
           </div>
 
           <div className="space-y-1 text-center">
@@ -1258,7 +1258,7 @@ export default function FinancialLiteracyClient() {
                           <PolarGrid stroke="#e2e8f0" />
                           <PolarAngleAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 10 }} />
                           <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                          <Radar dataKey="score" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.2} />
+                          <Radar dataKey="score" stroke="#10b981" fill="#10b981" fillOpacity={0.2} />
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1278,7 +1278,7 @@ export default function FinancialLiteracyClient() {
                             labelStyle={{ color: '#334155' }}
                             itemStyle={{ color: '#334155' }}
                           />
-                          <Bar dataKey="score" fill="#7c3aed" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="score" fill="#10b981" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1358,7 +1358,7 @@ export default function FinancialLiteracyClient() {
               <a
                 href="/learn/inflation"
                 onClick={(e) => { e.preventDefault(); router.push('/learn/inflation'); }}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-300 hover:bg-violet-50 transition-all"
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-emerald-300 hover:bg-emerald-50 transition-all"
               >
                 <div className="font-bold text-slate-700 text-sm">Learn</div>
                 <div className="text-sm text-slate-500 mt-1">تورم چیست؟</div>
@@ -1367,7 +1367,7 @@ export default function FinancialLiteracyClient() {
               <a
                 href="/tools/purchasing-power"
                 onClick={(e) => { e.preventDefault(); router.push('/tools/purchasing-power'); }}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-300 hover:bg-violet-50 transition-all"
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-emerald-300 hover:bg-emerald-50 transition-all"
               >
                 <div className="font-bold text-slate-700 text-sm">Practice</div>
                 <div className="text-sm text-slate-500 mt-1">قدرت خرید / تورم</div>
@@ -1376,7 +1376,7 @@ export default function FinancialLiteracyClient() {
               <a
                 href="/tools/loan"
                 onClick={(e) => { e.preventDefault(); router.push('/tools/loan'); }}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-violet-300 hover:bg-violet-50 transition-all"
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-4 hover:border-emerald-300 hover:bg-emerald-50 transition-all"
               >
                 <div className="font-bold text-slate-700 text-sm">Practice</div>
                 <div className="text-sm text-slate-500 mt-1">قسط وام</div>
@@ -1428,7 +1428,7 @@ export default function FinancialLiteracyClient() {
                   <button
                     type="button"
                     onClick={() => setShowExplainModal(false)}
-                    className="w-full mt-4 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
+                    className="w-full mt-4 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all active:scale-95"
                   >
                     متوجه شدم
                   </button>
@@ -1455,7 +1455,7 @@ export default function FinancialLiteracyClient() {
           <button
             type="button"
             onClick={goNext}
-            className="px-8 py-4 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-bold transition-all active:scale-95"
+            className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all active:scale-95"
           >
             ادامه
           </button>
@@ -1471,151 +1471,155 @@ export default function FinancialLiteracyClient() {
     const canChangeLevelNow = totalAnswered === 0;
 
     return (
-      <div className="space-y-4 text-right w-full max-w-3xl mx-auto">
-        {/* Progress bar */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 rounded-full bg-black/6 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
-              style={{ width: `${progressPct}%` }}
-            />
+      <div className="space-y-4">
+        {/* Progress bar — identical to financial-taste */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <span className="text-xs text-slate-500 font-bold whitespace-nowrap shrink-0">پیشرفت</span>
+            <div className="flex-1 h-2 rounded-full bg-black/6 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="text-xs font-black text-emerald-600 shrink-0 w-8 text-left">{progressPct}٪</span>
           </div>
-          <span className="text-xs font-bold text-slate-400 shrink-0">{progressPct}٪</span>
           {canChangeLevelNow && (
             <button
               type="button"
               onClick={backToLevelSelectIfNoAnswerYet}
-              className="text-xs font-bold text-slate-400 hover:text-violet-600 transition-colors shrink-0 underline underline-offset-2"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 transition font-bold shrink-0"
             >
               تغییر سطح
             </button>
           )}
         </div>
 
-        {/* Question card */}
+        {/* Main white card — identical to financial-taste */}
         <div className="bg-white rounded-3xl border border-black/6 shadow-sm overflow-hidden">
-          {/* Category header */}
-          <div className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b border-black/5 bg-slate-50">
-            <div className="w-8 h-8 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
-              {React.createElement(catIcon, { size: 16, className: 'text-violet-600' })}
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="font-bold text-slate-700 text-sm">{currentCategory.title}</span>
-              <span className="text-slate-400 text-xs mr-2">
-                • سؤال {answeredCountInCat + (isFeedback ? 0 : 1)} از {catTotal}
-              </span>
-            </div>
-            <div className="text-[11px] text-slate-400 shrink-0">{formatMinutes(remainingMin)} باقی</div>
-          </div>
-
-          {/* Encouragement */}
-          {encouragement && (
-            <div className="mx-4 sm:mx-5 mt-4 rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-emerald-700 text-xs leading-6">
-              {encouragement}
-            </div>
-          )}
-
-          {/* Question text */}
-          <div className="px-4 sm:px-5 pt-4 pb-3">
-            <div className="font-black text-slate-800 leading-8 text-base sm:text-lg">{q.text}</div>
-          </div>
-
-          {/* Options */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 px-4 sm:px-5 pb-4">
-            {q.options.map((opt, idx) => {
-              const isChosen = chosen === idx;
-              const isCorrectOpt = correct === idx;
-              let cls = 'border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-violet-50';
-
-              if (isFeedback) {
-                if (isCorrectOpt) cls = 'border-emerald-300 bg-emerald-50 text-emerald-800';
-                else if (isChosen && !isCorrectOpt) cls = 'border-rose-300 bg-rose-50 text-rose-700';
-                else cls = 'border-slate-100 bg-slate-50 text-slate-400';
-              }
-
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isFeedback}
-                  onClick={() => answerQuestion(idx)}
-                  className={`rounded-2xl border px-4 py-3 text-right transition-all active:scale-[0.98] ${cls}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="shrink-0">
-                      {isFeedback ? (
-                        isCorrectOpt ? (
-                          <CheckCircle2 size={18} className="text-emerald-500" />
-                        ) : isChosen ? (
-                          <XCircle size={18} className="text-rose-400" />
-                        ) : (
-                          <div className="w-[18px] h-[18px]" />
-                        )
-                      ) : (
-                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs text-slate-500 font-bold shrink-0">
-                          {idx + 1}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm font-medium leading-6 text-right flex-1">{opt}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Feedback */}
-          {isFeedback && (
-            <div className="mx-4 sm:mx-5 mb-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <div className="flex items-center gap-2.5">
-                {chosen === correct ? (
-                  <>
-                    <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
-                    <div className="font-black text-emerald-700">درست</div>
-                  </>
-                ) : (
-                  <>
-                    <XCircle size={18} className="text-rose-500 shrink-0" />
-                    <div className="font-black text-rose-700">اشتباه</div>
-                  </>
-                )}
-                <div className="mr-auto">
-                  <button
-                    type="button"
-                    onClick={() => { if (autoAdvanceTimerRef.current) { clearTimeout(autoAdvanceTimerRef.current); autoAdvanceTimerRef.current = null; } goNext(); }}
-                    className="text-xs font-bold text-slate-400 hover:text-violet-600 transition-colors"
-                  >
-                    سؤال بعدی ←
-                  </button>
+          <div className="p-5 md:p-8">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-slate-900 font-black text-lg">
+                  سؤال {answeredCountInCat + (isFeedback ? 0 : 1)} از {catTotal}
                 </div>
+                <div className="text-slate-500 text-sm mt-1">{currentCategory.title}</div>
               </div>
-              <div className="mt-2.5 text-slate-600 text-sm leading-7">{q.explanationShort}</div>
-              {q.explanationMore && (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowMore((s) => !s)}
-                    className="text-sm font-bold text-violet-600 hover:text-violet-500 transition-colors"
-                  >
-                    {showMore ? 'بستن توضیح بیشتر' : 'بیشتر بدانم'}
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {showMore && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-2.5 text-slate-500 text-sm leading-7">{q.explanationMore}</div>
-                      </motion.div>
+              <div className="text-xs text-slate-400 shrink-0">{formatMinutes(remainingMin)} باقی</div>
+            </div>
+
+            {/* Encouragement */}
+            {encouragement && (
+              <div className="mt-4 rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-emerald-700 text-xs leading-6">
+                {encouragement}
+              </div>
+            )}
+
+            {/* Inner question card — identical to financial-taste */}
+            <div className="mt-6 rounded-3xl border border-black/8 bg-slate-50 p-5">
+              {/* Question text */}
+              <div className="text-slate-900 font-extrabold text-sm leading-7">{q.text}</div>
+
+              {/* Options — single column, same as financial-taste */}
+              <div className="mt-4 grid gap-2">
+                {q.options.map((opt, idx) => {
+                  const isChosen = chosen === idx;
+                  const isCorrectOpt = correct === idx;
+                  let cls = 'border-black/10 bg-white hover:bg-slate-50 text-slate-700';
+
+                  if (isFeedback) {
+                    if (isCorrectOpt) cls = 'border-emerald-300 bg-emerald-50 text-slate-900';
+                    else if (isChosen && !isCorrectOpt) cls = 'border-rose-300 bg-rose-50 text-slate-700';
+                    else cls = 'border-black/5 bg-white/60 text-slate-400';
+                  }
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={isFeedback}
+                      onClick={() => answerQuestion(idx)}
+                      className={`w-full text-right rounded-2xl border px-3 py-3 text-sm transition-all ${cls}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {isFeedback ? (
+                          <div className="shrink-0">
+                            {isCorrectOpt ? (
+                              <CheckCircle2 size={16} className="text-emerald-500" />
+                            ) : isChosen ? (
+                              <XCircle size={16} className="text-rose-400" />
+                            ) : (
+                              <div className="w-4 h-4" />
+                            )}
+                          </div>
+                        ) : null}
+                        <span className="font-medium">{opt}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Hint / Feedback — inside inner card */}
+              {isFeedback ? (
+                <div className="mt-4 border-t border-black/6 pt-4">
+                  <div className="flex items-center gap-2">
+                    {chosen === correct ? (
+                      <>
+                        <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                        <span className="font-black text-emerald-700 text-sm">درست</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle size={16} className="text-rose-500 shrink-0" />
+                        <span className="font-black text-rose-700 text-sm">اشتباه</span>
+                      </>
                     )}
-                  </AnimatePresence>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (autoAdvanceTimerRef.current) { clearTimeout(autoAdvanceTimerRef.current); autoAdvanceTimerRef.current = null; }
+                        goNext();
+                      }}
+                      className="mr-auto text-xs font-bold text-slate-400 hover:text-emerald-600 transition-colors"
+                    >
+                      سؤال بعدی ←
+                    </button>
+                  </div>
+                  <div className="mt-2 text-slate-600 text-sm leading-7">{q.explanationShort}</div>
+                  {q.explanationMore && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowMore((s) => !s)}
+                        className="text-xs font-bold text-emerald-600 hover:text-emerald-500 transition-colors"
+                      >
+                        {showMore ? 'بستن' : 'بیشتر بدانم'}
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {showMore && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-2 text-slate-500 text-xs leading-7">{q.explanationMore}</div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-3 text-xs text-slate-400 leading-6">
+                  با انتخاب گزینه، سؤال بعدی خودکار نمایش داده می‌شود.
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     );
