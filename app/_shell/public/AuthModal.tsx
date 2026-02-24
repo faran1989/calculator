@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 
 const BRAND = "#10B981";
 
@@ -24,6 +24,8 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
+type Tab = "login" | "register" | "forgot";
+
 type Props = {
   initialTab: "login" | "register";
   onClose: () => void;
@@ -31,7 +33,7 @@ type Props = {
 
 export default function AuthModal({ initialTab, onClose }: Props) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"login" | "register">(initialTab);
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [showPassword, setShowPassword] = useState(false);
 
   // Login state
@@ -47,6 +49,12 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
 
+  // Forgot password state
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSent, setForgotSent] = useState(false);
+
   // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -60,6 +68,14 @@ export default function AuthModal({ initialTab, onClose }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  // Reset forgot state when switching away
+  function goToTab(tab: Tab) {
+    if (tab !== "forgot") {
+      setForgotEmail(""); setForgotError(null); setForgotSent(false);
+    }
+    setActiveTab(tab);
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError(null);
@@ -71,10 +87,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        setLoginError(data?.error ?? "خطا در ورود");
-        return;
-      }
+      if (!res.ok || !data?.ok) { setLoginError(data?.error ?? "خطا در ورود"); return; }
       onClose();
       router.push("/dashboard");
       router.refresh();
@@ -88,10 +101,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setRegError(null);
-    if (regPassword.length < 8) {
-      setRegError("رمز عبور باید حداقل ۸ کاراکتر باشد.");
-      return;
-    }
+    if (regPassword.length < 8) { setRegError("رمز عبور باید حداقل ۸ کاراکتر باشد."); return; }
     setRegLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -100,16 +110,33 @@ export default function AuthModal({ initialTab, onClose }: Props) {
         body: JSON.stringify({ email: regEmail, password: regPassword, name: regName.trim() || undefined }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        setRegError(data?.error ?? "خطا در ثبت‌نام");
-        return;
-      }
+      if (!res.ok || !data?.ok) { setRegError(data?.error ?? "خطا در ثبت‌نام"); return; }
       onClose();
       router.push(`/check-email?email=${encodeURIComponent(regEmail)}`);
     } catch {
       setRegError("خطای غیرمنتظره");
     } finally {
       setRegLoading(false);
+    }
+  }
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) { setForgotError(data?.error ?? "خطایی رخ داد."); return; }
+      setForgotSent(true);
+    } catch {
+      setForgotError("خطای غیرمنتظره.");
+    } finally {
+      setForgotLoading(false);
     }
   }
 
@@ -149,37 +176,54 @@ export default function AuthModal({ initialTab, onClose }: Props) {
             <X className="w-4 h-4" />
           </button>
 
-          {/* Tabs */}
-          <div className="flex bg-emerald-50 rounded-2xl p-1.5 mb-5 gap-1">
-            {(["login", "register"] as const).map((tab) => (
+          {/* ── FORGOT view: custom header with back button ── */}
+          {activeTab === "forgot" ? (
+            <div className="mb-5">
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                  activeTab === tab
-                    ? "bg-white text-emerald-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
+                type="button"
+                onClick={() => goToTab("login")}
+                className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-600 transition-colors mb-4"
               >
-                {tab === "login" ? "ورود به حساب" : "ثبت‌نام رایگان"}
+                <ArrowRight className="w-4 h-4" />
+                بازگشت به ورود
               </button>
-            ))}
-          </div>
+              <h2 className="text-xl font-bold text-slate-800">فراموشی رمز عبور</h2>
+              <p className="text-slate-500 text-sm mt-1">ایمیل حسابت رو وارد کن تا لینک بازیابی برات بفرستیم</p>
+            </div>
+          ) : (
+            /* ── LOGIN / REGISTER: tabs ── */
+            <>
+              <div className="flex bg-emerald-50 rounded-2xl p-1.5 mb-5 gap-1">
+                {(["login", "register"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => goToTab(tab)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      activeTab === tab
+                        ? "bg-white text-emerald-700 shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {tab === "login" ? "ورود به حساب" : "ثبت‌نام رایگان"}
+                  </button>
+                ))}
+              </div>
 
-          {/* Headline */}
-          <div className="mb-4">
-            {activeTab === "login" ? (
-              <>
-                <h2 className="text-xl font-bold text-slate-800">خوش برگشتی 👋</h2>
-                <p className="text-slate-500 text-sm mt-1">نمودارها و محاسبات ذخیره‌شده‌ات منتظرته</p>
-              </>
-            ) : (
-              <>
-                <h2 className="text-xl font-bold text-slate-800">یه قدم تا آگاهی مالی 🌱</h2>
-                <p className="text-slate-500 text-sm mt-1">رایگان، بدون کارت بانکی — همیشه</p>
-              </>
-            )}
-          </div>
+              <div className="mb-4">
+                {activeTab === "login" ? (
+                  <>
+                    <h2 className="text-xl font-bold text-slate-800">خوش برگشتی 👋</h2>
+                    <p className="text-slate-500 text-sm mt-1">نمودارها و محاسبات ذخیره‌شده‌ات منتظرته</p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-bold text-slate-800">یه قدم تا آگاهی مالی 🌱</h2>
+                    <p className="text-slate-500 text-sm mt-1">رایگان، بدون کارت بانکی — همیشه</p>
+                  </>
+                )}
+              </div>
+            </>
+          )}
 
           {/* ── LOGIN FORM ── */}
           {activeTab === "login" && (
@@ -198,9 +242,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-sm font-medium text-slate-700">رمز عبور</label>
-                </div>
+                <label className="text-sm font-medium text-slate-700 block mb-1">رمز عبور</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -233,16 +275,16 @@ export default function AuthModal({ initialTab, onClose }: Props) {
               </button>
 
               <div className="flex items-center justify-between pt-1">
-                <a
-                  href="/forgot-password"
-                  onClick={onClose}
+                <button
+                  type="button"
+                  onClick={() => goToTab("forgot")}
                   className="text-sm text-slate-400 hover:text-emerald-600 transition-colors"
                 >
                   فراموشی رمز؟
-                </a>
+                </button>
                 <p className="text-sm text-slate-500">
                   هنوز ثبت‌نام نکردی؟{" "}
-                  <button type="button" onClick={() => setActiveTab("register")} className="text-emerald-600 font-semibold hover:text-emerald-700">
+                  <button type="button" onClick={() => goToTab("register")} className="text-emerald-600 font-semibold hover:text-emerald-700">
                     شروع رایگان
                   </button>
                 </p>
@@ -312,11 +354,79 @@ export default function AuthModal({ initialTab, onClose }: Props) {
 
               <p className="text-center text-sm text-slate-500 pt-1">
                 قبلاً ثبت‌نام کردی؟{" "}
-                <button type="button" onClick={() => setActiveTab("login")} className="text-emerald-600 font-semibold hover:text-emerald-700">
+                <button type="button" onClick={() => goToTab("login")} className="text-emerald-600 font-semibold hover:text-emerald-700">
                   وارد شو
                 </button>
               </p>
             </form>
+          )}
+
+          {/* ── FORGOT PASSWORD FORM ── */}
+          {activeTab === "forgot" && (
+            forgotSent ? (
+              /* Success */
+              <div className="text-center space-y-4 py-2">
+                <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-800">ایمیل ارسال شد</p>
+                  <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                    اگر <span className="text-slate-700 font-medium" dir="ltr">{forgotEmail}</span> در سیستم ثبت شده باشد، لینک بازیابی ارسال شد.
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">لینک تا ۱ ساعت معتبر است. پوشه Spam را هم بررسی کنید.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => goToTab("login")}
+                  className="text-sm text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
+                >
+                  بازگشت به ورود
+                </button>
+              </div>
+            ) : (
+              /* Form */
+              <form onSubmit={handleForgot} className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">ایمیل</label>
+                  <input
+                    type="email"
+                    placeholder="example@email.com"
+                    dir="ltr"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    autoFocus
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200/70 bg-white/70 text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition-all"
+                  />
+                </div>
+
+                {forgotError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
+                    {forgotError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm mt-1 disabled:opacity-60"
+                  style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
+                >
+                  {forgotLoading ? "در حال ارسال..." : "ارسال لینک بازیابی"}
+                </button>
+
+                <p className="text-center text-sm text-slate-500 pt-1">
+                  رمزت رو یادت اومد؟{" "}
+                  <button type="button" onClick={() => goToTab("login")} className="text-emerald-600 font-semibold hover:text-emerald-700">
+                    ورود
+                  </button>
+                </p>
+              </form>
+            )
           )}
         </div>
       </motion.div>
