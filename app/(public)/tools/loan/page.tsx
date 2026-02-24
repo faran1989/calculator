@@ -1,7 +1,7 @@
 // app/(public)/tools/loan/page.tsx
 import type { Metadata } from 'next';
 import { Landmark, Briefcase, Plane, Car } from 'lucide-react';
-import LoanClient from './loanClient';
+import LoanForm from './LoanForm';
 import ToolShell from '@/components/tools/ToolShell';
 import { toolConfig } from './tool.config';
 
@@ -125,7 +125,7 @@ export default function Page() {
         faqItems={faqSection?.items}
         relatedTools={relatedTools}
       >
-        <LoanClient />
+        <LoanForm />
       </ToolShell>
     </>
   );
