@@ -1052,37 +1052,39 @@ export default function FinancialLiteracyClient() {
             بعد از هر سؤال، توضیح کوتاه می‌بینی.
           </p>
 
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 sm:px-5 py-5 text-right max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 mb-3">
-              <HelpCircle size={18} className="text-slate-400" />
-              <div className="font-bold text-sm text-slate-700">اختیاری: سطح خودت رو چطور می‌بینی؟</div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { k: 'starter', t: 'تازه‌کار' },
-                { k: 'learning', t: 'در حال یادگیری' },
-                { k: 'familiar', t: 'نسبتاً آشنا' },
-                { k: 'pro', t: 'حرفه‌ای' },
-              ].map((it) => {
-                const active = toolState.selfLevel === (it.k as PersistedState['selfLevel']);
-                return (
-                  <button
-                    key={it.k}
-                    type="button"
-                    onClick={() => applySelfLevel(it.k as PersistedState['selfLevel'])}
-                    className={`rounded-2xl border px-4 py-3 text-right transition-all active:scale-95 ${
-                      active
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-300'
-                    }`}
-                  >
-                    <div className="font-black text-sm">{it.t}</div>
-                    <div className="text-[11px] text-slate-400 mt-1 leading-5">
-                      فقط برای شروع سختی
-                    </div>
-                  </button>
-                );
-              })}
+          <div className="bg-white rounded-3xl border border-black/6 shadow-sm overflow-hidden text-right">
+            <div className="p-5 md:p-8">
+              <div className="flex items-center gap-3">
+                <HelpCircle size={18} className="text-slate-400" />
+                <div className="font-bold text-sm text-slate-700">اختیاری: سطح خودت رو چطور می‌بینی؟</div>
+              </div>
+              <div className="mt-6 rounded-3xl border border-black/8 bg-slate-50 p-5">
+                <div className="grid gap-2">
+                  {[
+                    { k: 'starter', t: 'تازه‌کار' },
+                    { k: 'learning', t: 'در حال یادگیری' },
+                    { k: 'familiar', t: 'نسبتاً آشنا' },
+                    { k: 'pro', t: 'حرفه‌ای' },
+                  ].map((it) => {
+                    const active = toolState.selfLevel === (it.k as PersistedState['selfLevel']);
+                    return (
+                      <button
+                        key={it.k}
+                        type="button"
+                        onClick={() => applySelfLevel(it.k as PersistedState['selfLevel'])}
+                        className={`w-full text-right rounded-2xl border px-3 py-3 text-sm transition-all active:scale-95 ${
+                          active
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                            : 'border-black/10 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="font-black">{it.t}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5 leading-5">فقط برای شروع سختی</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
