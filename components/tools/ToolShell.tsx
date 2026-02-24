@@ -4,10 +4,10 @@
 // Ultra-premium shared template for all tools
 // SEO sections (method + FAQ) always in DOM — never hidden behind tabs
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ShieldCheck, Zap, Lock, ChevronDown, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, Zap, Lock, ChevronDown, ExternalLink, ArrowUp } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
    Types
@@ -105,7 +105,7 @@ function RelatedCard({ tool }: { tool: RelatedTool }) {
 }
 
 /* ─────────────────────────────────────────────
-   Section Header — divider + label
+   Section Header
 ───────────────────────────────────────────── */
 function SectionHeader({ label }: { label: string }) {
   return (
@@ -136,8 +136,26 @@ export default function ToolShell({
   faqItems,
   relatedTools = [],
 }: ToolShellProps) {
-  const hasSeoContent = !!methodContent || !!(faqItems?.length);
+  const hasSeoContent      = !!methodContent || !!(faqItems?.length);
   const hasBothSeoSections = !!methodContent && !!(faqItems?.length);
+
+  /* ── Floating back-to-tool button ── */
+  const toolSectionRef  = useRef<HTMLElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  useEffect(() => {
+    const el = toolSectionRef.current;
+    if (!el || !hasSeoContent) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowScrollBtn(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '-80px 0px 0px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasSeoContent]);
+
+  const scrollToTool = () =>
+    toolSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <div dir="rtl" className="min-h-screen bg-gradient-to-b from-slate-50/80 to-white">
@@ -149,14 +167,19 @@ export default function ToolShell({
         <div className="absolute -bottom-8 left-12 w-40 h-40 rounded-full bg-teal-100/20 blur-2xl pointer-events-none" />
 
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-6 pb-7">
-          {/* Breadcrumb */}
-          <Link
-            href="/tools"
-            className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-emerald-600 transition-colors mb-5 group"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            همه ابزارها
-          </Link>
+
+          {/* ── Breadcrumb ── */}
+          <nav className="flex items-center gap-1.5 text-sm mb-5 min-w-0" aria-label="مسیر صفحه">
+            <Link
+              href="/tools"
+              className="text-slate-400 hover:text-emerald-600 transition-colors font-medium shrink-0"
+            >
+              همه ابزارها
+            </Link>
+            {/* جداکننده RTL: chevron-left در dir=rtl بصورت « نمایش داده می‌شود */}
+            <ChevronLeft className="w-3.5 h-3.5 text-slate-300 shrink-0 rotate-180" aria-hidden />
+            <span className="text-slate-700 font-bold truncate">{title}</span>
+          </nav>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {icon && (
@@ -179,9 +202,9 @@ export default function ToolShell({
                     key={i}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-black/6 shadow-sm"
                   >
-                    {i === 0 && <Zap className="w-3 h-3 text-emerald-500" />}
+                    {i === 0 && <Zap       className="w-3 h-3 text-emerald-500" />}
                     {i === 1 && <ShieldCheck className="w-3 h-3 text-emerald-500" />}
-                    {i === 2 && <Lock className="w-3 h-3 text-emerald-500" />}
+                    {i === 2 && <Lock      className="w-3 h-3 text-emerald-500" />}
                     <span className="text-xs font-black text-slate-700">{s.value}</span>
                     <span className="text-xs text-slate-400">{s.label}</span>
                   </div>
@@ -195,18 +218,16 @@ export default function ToolShell({
       {/* ── MAIN CONTENT ─────────────────────────────────── */}
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6 space-y-10">
 
-        {/* ── Tool (calculator / form) ── */}
-        <section>
+        {/* ── Tool section (with ref for IntersectionObserver) ── */}
+        <section ref={toolSectionRef}>
           {children}
         </section>
 
-        {/* ── SEO Sections (always in DOM, never JS-gated) ── */}
+        {/* ── SEO Sections (always in DOM) ── */}
         {hasSeoContent && (
           <section>
-            {/* روی دسکتاپ: اگر هر دو بخش وجود دارند → side by side */}
             <div className={hasBothSeoSections ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}>
 
-              {/* روش محاسبه */}
               {methodContent && (
                 <div>
                   <SectionHeader label="روش محاسبه" />
@@ -216,13 +237,13 @@ export default function ToolShell({
                 </div>
               )}
 
-              {/* سوالات متداول */}
               {faqItems?.length && (
                 <div>
                   <SectionHeader label="سوالات متداول" />
                   <FaqAccordion items={faqItems} />
                 </div>
               )}
+
             </div>
           </section>
         )}
@@ -240,6 +261,28 @@ export default function ToolShell({
         )}
 
       </div>
+
+      {/* ── Floating back-to-tool button ─────────────────── */}
+      <AnimatePresence>
+        {showScrollBtn && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <button
+              onClick={scrollToTool}
+              className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 bg-slate-900/90 backdrop-blur-md text-white rounded-full shadow-xl text-sm font-bold hover:bg-slate-800 active:scale-95 transition-all"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+              بازگشت به ابزار
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
