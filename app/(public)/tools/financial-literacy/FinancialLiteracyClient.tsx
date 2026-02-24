@@ -1804,19 +1804,16 @@ export default function FinancialLiteracyClient() {
   };
 
   return (
-    <div
-      className={`${vazirmatn.className} relative min-h-screen overflow-x-hidden bg-[#020617] text-slate-200 select-none`}
-      dir="rtl"
-      data-page="tool"
-      data-tool-slug={toolConfig.slug}
-    >
-      {/* Background Decorative Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full" />
-        <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-purple-500/5 blur-[120px] rounded-full" />
-      </div>
+    <div dir="rtl">
+      <ToolPanel />
+    </div>
+  );
+}
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+/* ─── legacy chrome below — kept for reference, not rendered ─── */
+function _LegacyChrome_NotRendered() {
+  return (
+    <div>
         {/* Header */}
         <header className="flex flex-col items-center mb-12 sm:mb-16" id="tool-header" data-section="header">
           <motion.div
@@ -2023,3 +2020,4 @@ export default function FinancialLiteracyClient() {
     </div>
   );
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
