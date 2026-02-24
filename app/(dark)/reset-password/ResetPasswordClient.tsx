@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Activity, Eye, EyeOff } from "lucide-react";
 
+const BRAND = "#10B981";
+
 export default function ResetPasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -17,13 +19,12 @@ export default function ResetPasswordClient() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // No token in URL
   if (!token) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 text-center space-y-4">
-          <p className="text-red-300 font-bold">لینک بازیابی نامعتبر است.</p>
-          <Link href="/forgot-password" className="text-sm text-emerald-400 hover:text-emerald-300 font-bold">
+      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 flex items-center justify-center px-4">
+        <div dir="rtl" className="w-full max-w-md bg-white/95 backdrop-blur-2xl rounded-2xl border border-emerald-200/55 shadow-2xl p-6 text-center space-y-4">
+          <p className="text-red-600 font-bold">لینک بازیابی نامعتبر است.</p>
+          <Link href="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold">
             درخواست لینک جدید
           </Link>
         </div>
@@ -34,15 +35,8 @@ export default function ResetPasswordClient() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (password !== confirm) {
-      setError("رمزهای عبور با هم مطابقت ندارند.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("رمز عبور باید حداقل ۸ کاراکتر باشد.");
-      return;
-    }
+    if (password !== confirm) { setError("رمزهای عبور با هم مطابقت ندارند."); return; }
+    if (password.length < 8) { setError("رمز عبور باید حداقل ۸ کاراکتر باشد."); return; }
 
     setLoading(true);
     try {
@@ -52,10 +46,7 @@ export default function ResetPasswordClient() {
         body: JSON.stringify({ token, password }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "خطایی رخ داد.");
-        return;
-      }
+      if (!res.ok || !data?.ok) { setError(data?.error ?? "خطایی رخ داد."); return; }
       setDone(true);
       setTimeout(() => router.replace("/login"), 2500);
     } catch {
@@ -66,39 +57,38 @@ export default function ResetPasswordClient() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2.5 mb-8 group">
-          <div className="w-9 h-9 bg-[#059669] rounded-full flex items-center justify-center shadow-lg shadow-emerald-900/50 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 bg-[#059669] rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-105 transition-transform">
             <Activity className="text-white w-5 h-5" />
           </div>
-          <span className="font-black text-xl tracking-tight">تخمینو</span>
+          <span className="font-black text-xl text-slate-800 tracking-tight">تخمینو</span>
         </Link>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
+        <div dir="rtl" className="w-full bg-white/95 backdrop-blur-2xl rounded-2xl border border-emerald-200/55 shadow-2xl p-6">
           {done ? (
-            /* ── SUCCESS ── */
-            <div className="text-center space-y-5">
-              <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center space-y-5 py-2">
+              <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-black">رمز عبور تغییر کرد!</h2>
-                <p className="mt-2 text-sm text-slate-400">در حال انتقال به صفحه ورود...</p>
+                <h2 className="text-xl font-bold text-slate-800">رمز عبور تغییر کرد!</h2>
+                <p className="mt-2 text-sm text-slate-500">در حال انتقال به صفحه ورود...</p>
               </div>
             </div>
           ) : (
-            /* ── FORM ── */
             <>
-              <h1 className="text-2xl font-black">تعیین رمز جدید</h1>
-              <p className="mt-2 text-sm text-slate-400">رمز جدید حسابت رو وارد کن.</p>
+              <div className="mb-5">
+                <h1 className="text-xl font-bold text-slate-800">تعیین رمز جدید</h1>
+                <p className="text-slate-500 text-sm mt-1">رمز جدید حسابت رو وارد کن</p>
+              </div>
 
-              <form onSubmit={onSubmit} className="mt-6 space-y-4">
+              <form onSubmit={onSubmit} className="space-y-3">
                 <div>
-                  <label className="block text-xs text-slate-300 mb-2">رمز عبور جدید</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">رمز عبور جدید</label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
@@ -107,20 +97,17 @@ export default function ResetPasswordClient() {
                       placeholder="حداقل ۸ کاراکتر"
                       required
                       autoComplete="new-password"
-                      className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-3 text-sm outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all placeholder:text-slate-600"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200/70 bg-white/70 text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition-all"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs text-slate-300 mb-2">تکرار رمز عبور</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">تکرار رمز عبور</label>
                   <input
                     type={showPassword ? "text" : "password"}
                     value={confirm}
@@ -128,12 +115,12 @@ export default function ResetPasswordClient() {
                     placeholder="رمز را دوباره وارد کن"
                     required
                     autoComplete="new-password"
-                    className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-3 text-sm outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all placeholder:text-slate-600"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200/70 bg-white/70 text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition-all"
                   />
                 </div>
 
                 {error && (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
                     {error}
                   </div>
                 )}
@@ -141,16 +128,17 @@ export default function ResetPasswordClient() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 font-black text-sm transition-colors disabled:opacity-60"
+                  className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm mt-1 disabled:opacity-60"
+                  style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
                 >
                   {loading ? "در حال ذخیره..." : "ذخیره رمز جدید"}
                 </button>
 
-                <div className="text-center">
-                  <Link href="/login" className="text-xs text-slate-400 hover:text-slate-200 transition-colors">
+                <p className="text-center text-sm text-slate-500 pt-1">
+                  <Link href="/login" className="text-emerald-600 font-semibold hover:text-emerald-700">
                     بازگشت به ورود
                   </Link>
-                </div>
+                </p>
               </form>
             </>
           )}

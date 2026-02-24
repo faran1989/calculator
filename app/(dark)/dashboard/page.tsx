@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardGuardClient from "./DashboardGuardClient";
 import NoBfcache from "./NoBfcache";
 import AvatarWithFallback from "@/components/AvatarWithFallback";
+import ChangePasswordForm from "./ChangePasswordForm";
 import { getGravatarUrl } from "@/lib/gravatar";
 import { Activity, BarChart3, BookOpen, Calculator, ChevronLeft, Home, LogOut, Target, TrendingUp, User } from "lucide-react";
 
@@ -412,6 +413,12 @@ export default async function DashboardPage() {
               </Link>
             ))}
           </div>
+        </section>
+
+        {/* ─── ACCOUNT SETTINGS ─── */}
+        <section>
+          <h2 className="text-sm font-black text-slate-400 mb-3 px-1">تنظیمات حساب</h2>
+          <ChangePasswordForm />
         </section>
 
         {/* Footer */}

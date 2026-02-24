@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Activity } from "lucide-react";
 
+const BRAND = "#10B981";
+
 export default function ForgotPasswordClient() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,35 +36,38 @@ export default function ForgotPasswordClient() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2.5 mb-8 group">
-          <div className="w-9 h-9 bg-[#059669] rounded-full flex items-center justify-center shadow-lg shadow-emerald-900/50 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 bg-[#059669] rounded-full flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:scale-105 transition-transform">
             <Activity className="text-white w-5 h-5" />
           </div>
-          <span className="font-black text-xl tracking-tight">تخمینو</span>
+          <span className="font-black text-xl text-slate-800 tracking-tight">تخمینو</span>
         </Link>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-8">
+        <div
+          dir="rtl"
+          className="w-full bg-white/95 backdrop-blur-2xl rounded-2xl border border-emerald-200/55 shadow-2xl p-6"
+        >
           {sent ? (
-            /* ── SUCCESS STATE ── */
-            <div className="text-center space-y-5">
-              <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            /* ── SUCCESS ── */
+            <div className="text-center space-y-5 py-2">
+              <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-black">ایمیل ارسال شد</h2>
-                <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-                  اگر <span className="text-slate-200 font-medium" dir="ltr">{email}</span> در سیستم ثبت شده باشد، لینک بازیابی رمز ارسال شد.
+                <h2 className="text-xl font-bold text-slate-800">ایمیل ارسال شد</h2>
+                <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                  اگر <span className="text-slate-700 font-medium" dir="ltr">{email}</span> در سیستم ثبت شده باشد، لینک بازیابی رمز ارسال شد.
                 </p>
-                <p className="mt-3 text-xs text-slate-500">لینک تا ۱ ساعت معتبر است. پوشه Spam را هم بررسی کنید.</p>
+                <p className="mt-2 text-xs text-slate-400">لینک تا ۱ ساعت معتبر است. پوشه Spam را هم بررسی کنید.</p>
               </div>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 mt-2 text-sm text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
               >
                 بازگشت به ورود
               </Link>
@@ -70,12 +75,14 @@ export default function ForgotPasswordClient() {
           ) : (
             /* ── FORM ── */
             <>
-              <h1 className="text-2xl font-black">فراموشی رمز عبور</h1>
-              <p className="mt-2 text-sm text-slate-400">ایمیل حسابت رو وارد کن تا لینک بازیابی برات بفرستیم.</p>
+              <div className="mb-5">
+                <h1 className="text-xl font-bold text-slate-800">فراموشی رمز عبور</h1>
+                <p className="text-slate-500 text-sm mt-1">ایمیل حسابت رو وارد کن تا لینک بازیابی برات بفرستیم</p>
+              </div>
 
-              <form onSubmit={onSubmit} className="mt-6 space-y-4">
+              <form onSubmit={onSubmit} className="space-y-3">
                 <div>
-                  <label className="block text-xs text-slate-300 mb-2">ایمیل</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">ایمیل</label>
                   <input
                     type="email"
                     value={email}
@@ -84,12 +91,12 @@ export default function ForgotPasswordClient() {
                     required
                     dir="ltr"
                     autoComplete="email"
-                    className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-3 text-sm outline-none focus:border-emerald-500/60 focus:ring-1 focus:ring-emerald-500/20 transition-all placeholder:text-slate-600"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200/70 bg-white/70 text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition-all"
                   />
                 </div>
 
                 {error && (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
                     {error}
                   </div>
                 )}
@@ -97,16 +104,18 @@ export default function ForgotPasswordClient() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-3 font-black text-sm transition-colors disabled:opacity-60"
+                  className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm mt-1 disabled:opacity-60"
+                  style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
                 >
                   {loading ? "در حال ارسال..." : "ارسال لینک بازیابی"}
                 </button>
 
-                <div className="text-center">
-                  <Link href="/login" className="text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                    بازگشت به ورود
+                <p className="text-center text-sm text-slate-500 pt-1">
+                  رمزت رو یادت اومد؟{" "}
+                  <Link href="/login" className="text-emerald-600 font-semibold hover:text-emerald-700">
+                    ورود
                   </Link>
-                </div>
+                </p>
               </form>
             </>
           )}
