@@ -37,6 +37,9 @@ yarn-error.log*
 dev.db
 dev.db-journal
 
+# vercel env import files (contain secrets)
+vercel-env-*.json
+
 # misc local files
 cookies.txt
 
