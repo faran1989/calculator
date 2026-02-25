@@ -4,12 +4,13 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AUTH_COOKIE_NAME, signAuthToken } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
-import { verifyTurnstile } from "@/lib/captcha";
+import { verifyMathCaptcha } from "@/lib/mathCaptcha";
 
 const BodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  captchaToken: z.string().nullish(),
+  captchaToken: z.string().min(1),
+  captchaAnswer: z.string().min(1),
 });
 
 export async function POST(req: NextRequest) {
@@ -25,11 +26,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = BodySchema.parse(await req.json());
 
-    // ── Captcha verify ────────────────────────────────────────────
-    const captchaOk = await verifyTurnstile(body.captchaToken);
-    if (!captchaOk) {
+    // ── Math captcha verify ───────────────────────────────────────
+    if (!verifyMathCaptcha(body.captchaToken, body.captchaAnswer)) {
       return NextResponse.json(
-        { ok: false, error: "تأیید کپچا ناموفق بود. لطفاً دوباره امتحان کنید." },
+        { ok: false, error: "پاسخ تأیید امنیتی اشتباه است. لطفاً دوباره امتحان کنید." },
         { status: 400 }
       );
     }

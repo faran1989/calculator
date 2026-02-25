@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, X } from "lucide-react";
-import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { ArrowRight, RefreshCw, X } from "lucide-react";
 
 const BRAND = "#10B981";
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -43,8 +41,9 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null);
-  const loginTurnstileRef = useRef<TurnstileInstance | null>(null);
+  const [loginCaptchaQuestion, setLoginCaptchaQuestion] = useState("");
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState("");
+  const [loginCaptchaAnswer, setLoginCaptchaAnswer] = useState("");
 
   // Register state
   const [regName, setRegName] = useState("");
@@ -52,8 +51,9 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   const [regPassword, setRegPassword] = useState("");
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
-  const [regCaptchaToken, setRegCaptchaToken] = useState<string | null>(null);
-  const regTurnstileRef = useRef<TurnstileInstance | null>(null);
+  const [regCaptchaQuestion, setRegCaptchaQuestion] = useState("");
+  const [regCaptchaToken, setRegCaptchaToken] = useState("");
+  const [regCaptchaAnswer, setRegCaptchaAnswer] = useState("");
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState("");
@@ -74,6 +74,31 @@ export default function AuthModal({ initialTab, onClose }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  async function fetchLoginCaptcha() {
+    try {
+      const res = await fetch("/api/auth/captcha");
+      const data = await res.json();
+      setLoginCaptchaQuestion(data.question ?? "");
+      setLoginCaptchaToken(data.token ?? "");
+      setLoginCaptchaAnswer("");
+    } catch { /* silent */ }
+  }
+
+  async function fetchRegCaptcha() {
+    try {
+      const res = await fetch("/api/auth/captcha");
+      const data = await res.json();
+      setRegCaptchaQuestion(data.question ?? "");
+      setRegCaptchaToken(data.token ?? "");
+      setRegCaptchaAnswer("");
+    } catch { /* silent */ }
+  }
+
+  useEffect(() => {
+    if (activeTab === "login") fetchLoginCaptcha();
+    else if (activeTab === "register") fetchRegCaptcha();
+  }, [activeTab]);
+
   function goToTab(tab: Tab) {
     if (tab !== "forgot") {
       setForgotEmail(""); setForgotError(null); setForgotSent(false);
@@ -84,8 +109,8 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError(null);
-    if (TURNSTILE_SITE_KEY && !loginCaptchaToken) {
-      setLoginError("لطفاً تأیید کپچا را کامل کنید.");
+    if (!loginCaptchaAnswer.trim()) {
+      setLoginError("لطفاً پاسخ تأیید امنیتی را وارد کنید.");
       return;
     }
     setLoginLoading(true);
@@ -93,13 +118,17 @@ export default function AuthModal({ initialTab, onClose }: Props) {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword, captchaToken: loginCaptchaToken }),
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+          captchaToken: loginCaptchaToken,
+          captchaAnswer: loginCaptchaAnswer,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
         setLoginError(data?.error ?? "خطا در ورود");
-        loginTurnstileRef.current?.reset();
-        setLoginCaptchaToken(null);
+        await fetchLoginCaptcha();
         return;
       }
       onClose();
@@ -107,8 +136,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
       router.refresh();
     } catch {
       setLoginError("خطای غیرمنتظره");
-      loginTurnstileRef.current?.reset();
-      setLoginCaptchaToken(null);
+      await fetchLoginCaptcha();
     } finally {
       setLoginLoading(false);
     }
@@ -119,8 +147,8 @@ export default function AuthModal({ initialTab, onClose }: Props) {
     setRegError(null);
     if (!regName.trim()) { setRegError("نام الزامی است."); return; }
     if (regPassword.length < 8) { setRegError("رمز عبور باید حداقل ۸ کاراکتر باشد."); return; }
-    if (TURNSTILE_SITE_KEY && !regCaptchaToken) {
-      setRegError("لطفاً تأیید کپچا را کامل کنید.");
+    if (!regCaptchaAnswer.trim()) {
+      setRegError("لطفاً پاسخ تأیید امنیتی را وارد کنید.");
       return;
     }
     setRegLoading(true);
@@ -128,21 +156,25 @@ export default function AuthModal({ initialTab, onClose }: Props) {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: regEmail, password: regPassword, name: regName.trim(), captchaToken: regCaptchaToken }),
+        body: JSON.stringify({
+          email: regEmail,
+          password: regPassword,
+          name: regName.trim(),
+          captchaToken: regCaptchaToken,
+          captchaAnswer: regCaptchaAnswer,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
         setRegError(data?.error ?? "خطا در ثبت‌نام");
-        regTurnstileRef.current?.reset();
-        setRegCaptchaToken(null);
+        await fetchRegCaptcha();
         return;
       }
       onClose();
       router.push(`/check-email?email=${encodeURIComponent(regEmail)}`);
     } catch {
       setRegError("خطای غیرمنتظره");
-      regTurnstileRef.current?.reset();
-      setRegCaptchaToken(null);
+      await fetchRegCaptcha();
     } finally {
       setRegLoading(false);
     }
@@ -286,19 +318,35 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Turnstile */}
-              {TURNSTILE_SITE_KEY && (
-                <div className="flex justify-center pt-1">
-                  <Turnstile
-                    ref={loginTurnstileRef}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setLoginCaptchaToken(token)}
-                    onExpire={() => setLoginCaptchaToken(null)}
-                    onError={() => setLoginCaptchaToken(null)}
-                    options={{ theme: "light", language: "auto", appearance: "always" }}
-                  />
+              {/* Math CAPTCHA */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">تأیید امنیتی</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1 bg-slate-50 rounded-xl border border-slate-200 px-3 py-2.5">
+                    <span className="text-slate-700 font-semibold text-sm select-none" dir="ltr">
+                      {loginCaptchaQuestion || "…"} =
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={loginCaptchaAnswer}
+                      onChange={(e) => setLoginCaptchaAnswer(e.target.value)}
+                      placeholder="؟"
+                      className="flex-1 bg-transparent text-slate-800 text-sm text-center focus:outline-none min-w-0"
+                      maxLength={4}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchLoginCaptcha}
+                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors"
+                    title="سوال جدید"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+              </div>
 
               {loginError && (
                 <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
@@ -308,7 +356,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={loginLoading || (!!TURNSTILE_SITE_KEY && !loginCaptchaToken)}
+                disabled={loginLoading}
                 className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
               >
@@ -381,19 +429,35 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Turnstile */}
-              {TURNSTILE_SITE_KEY && (
-                <div className="flex justify-center pt-1">
-                  <Turnstile
-                    ref={regTurnstileRef}
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setRegCaptchaToken(token)}
-                    onExpire={() => setRegCaptchaToken(null)}
-                    onError={() => setRegCaptchaToken(null)}
-                    options={{ theme: "light", language: "auto", appearance: "always" }}
-                  />
+              {/* Math CAPTCHA */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">تأیید امنیتی</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1 bg-slate-50 rounded-xl border border-slate-200 px-3 py-2.5">
+                    <span className="text-slate-700 font-semibold text-sm select-none" dir="ltr">
+                      {regCaptchaQuestion || "…"} =
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={regCaptchaAnswer}
+                      onChange={(e) => setRegCaptchaAnswer(e.target.value)}
+                      placeholder="؟"
+                      className="flex-1 bg-transparent text-slate-800 text-sm text-center focus:outline-none min-w-0"
+                      maxLength={4}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchRegCaptcha}
+                    className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-emerald-600 transition-colors"
+                    title="سوال جدید"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
+              </div>
 
               {regError && (
                 <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
@@ -403,7 +467,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={regLoading || (!!TURNSTILE_SITE_KEY && !regCaptchaToken)}
+                disabled={regLoading}
                 className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
               >
