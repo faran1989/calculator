@@ -4,10 +4,12 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { AUTH_COOKIE_NAME, signAuthToken } from "@/lib/auth/jwt";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { verifyTurnstile } from "@/lib/captcha";
 
 const BodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  captchaToken: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -23,9 +25,18 @@ export async function POST(req: NextRequest) {
   try {
     const body = BodySchema.parse(await req.json());
 
+    // ── Captcha verify ────────────────────────────────────────────
+    const captchaOk = await verifyTurnstile(body.captchaToken);
+    if (!captchaOk) {
+      return NextResponse.json(
+        { ok: false, error: "تأیید کپچا ناموفق بود. لطفاً دوباره امتحان کنید." },
+        { status: 400 }
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: body.email.toLowerCase().trim() },
-      select: { id: true, email: true, password: true, emailVerified: true },
+      select: { id: true, email: true, name: true, password: true, emailVerified: true },
     });
 
     if (!user) {
@@ -49,7 +60,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const token = await signAuthToken({ userId: user.id, email: user.email });
+    const token = await signAuthToken({ userId: user.id, email: user.email, name: user.name ?? undefined });
 
     const res = NextResponse.json({
       ok: true,
@@ -63,7 +74,7 @@ export async function POST(req: NextRequest) {
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
     });
 
     return res;

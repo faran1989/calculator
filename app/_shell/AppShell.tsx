@@ -29,14 +29,18 @@ export default async function AppShell({
   const publicHeaderOffset = 'pt-16 md:pt-20';
 
   // فقط وقتی chrome="public" هست user رو می‌خونیم
-  let publicUser: { email: string; gravatarUrl: string; initials: string } | null = null;
+  let publicUser: { email: string; name?: string; gravatarUrl: string; initials: string } | null = null;
   if (chrome === 'public') {
     const auth = await getAuthUser();
     if (auth) {
+      const initials = auth.name
+        ? auth.name.trim().split(/\s+/).slice(0, 2).map((w) => w[0].toUpperCase()).join('')
+        : auth.email[0].toUpperCase();
       publicUser = {
         email: auth.email,
+        name: auth.name,
         gravatarUrl: getGravatarUrl(auth.email, 40),
-        initials: auth.email[0].toUpperCase(),
+        initials,
       };
     }
   }

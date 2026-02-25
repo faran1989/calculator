@@ -13,6 +13,7 @@ import AuthModal from './AuthModal';
 ───────────────────────────────────────────── */
 type AuthUser = {
   email: string;
+  name?: string;
   gravatarUrl: string;
   initials: string;
 } | null;
@@ -142,7 +143,10 @@ function UserMenu({ user }: { user: NonNullable<AuthUser> }) {
           >
             {/* User info */}
             <div className="px-4 py-3 border-b border-black/6">
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              {user.name && (
+                <p className="text-sm font-bold text-gray-800 truncate">سلام {user.name} 👋</p>
+              )}
+              <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
             </div>
 
             <div className="py-1.5">
@@ -382,7 +386,12 @@ export default function PublicHeader({ user = null }: Props) {
                   <div className="flex flex-col gap-2" dir="rtl">
                     <div className="flex items-center gap-3 px-2 py-2 mb-1">
                       <Avatar user={user} size={40} />
-                      <span className="text-sm text-gray-600 truncate">{user.email}</span>
+                      <div className="min-w-0">
+                        {user.name && (
+                          <p className="text-sm font-bold text-gray-800 truncate">سلام {user.name} 👋</p>
+                        )}
+                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                      </div>
                     </div>
                     <Link
                       href="/dashboard"

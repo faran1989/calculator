@@ -5,11 +5,13 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 import { sendVerificationEmail } from "@/lib/email/resend";
+import { verifyTurnstile } from "@/lib/captcha";
 
 const BodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
-  name: z.string().min(1).optional(),
+  name: z.string().min(2),
+  captchaToken: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -24,6 +26,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = BodySchema.parse(await req.json());
+
+    // ── Captcha verify ────────────────────────────────────────────
+    const captchaOk = await verifyTurnstile(body.captchaToken);
+    if (!captchaOk) {
+      return NextResponse.json(
+        { ok: false, error: "تأیید کپچا ناموفق بود. لطفاً دوباره امتحان کنید." },
+        { status: 400 }
+      );
+    }
+
     const normalizedEmail = body.email.toLowerCase().trim();
 
     const exists = await prisma.user.findUnique({
@@ -44,7 +56,7 @@ export async function POST(req: NextRequest) {
       data: {
         email: normalizedEmail,
         password: hashed,
-        name: body.name ?? null,
+        name: body.name.trim(),
         emailVerified: false,
         profile: {
           create: {
@@ -56,9 +68,8 @@ export async function POST(req: NextRequest) {
       select: { id: true, email: true },
     });
 
-    // Generate a secure random token (64 hex chars)
     const token = randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await prisma.emailVerification.create({
       data: { userId: user.id, token, expiresAt },

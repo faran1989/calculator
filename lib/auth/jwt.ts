@@ -5,6 +5,7 @@ export const AUTH_COOKIE_NAME = "takhmino_auth";
 export type AuthTokenPayload = {
   userId: string;
   email: string;
+  name?: string;
 };
 
 function getSecretKey() {
@@ -34,6 +35,7 @@ export async function verifyAuthToken(token: string) {
     return {
       userId: String(payload.userId),
       email: String(payload.email),
+      name: payload.name ? String(payload.name) : undefined,
     } as AuthTokenPayload;
   } catch {
     return null;

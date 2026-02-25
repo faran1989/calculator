@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 
 const BRAND = "#10B981";
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -41,6 +43,8 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null);
+  const loginTurnstileRef = useRef<TurnstileInstance | null>(null);
 
   // Register state
   const [regName, setRegName] = useState("");
@@ -48,6 +52,8 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   const [regPassword, setRegPassword] = useState("");
   const [regLoading, setRegLoading] = useState(false);
   const [regError, setRegError] = useState<string | null>(null);
+  const [regCaptchaToken, setRegCaptchaToken] = useState<string | null>(null);
+  const regTurnstileRef = useRef<TurnstileInstance | null>(null);
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState("");
@@ -68,7 +74,6 @@ export default function AuthModal({ initialTab, onClose }: Props) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
-  // Reset forgot state when switching away
   function goToTab(tab: Tab) {
     if (tab !== "forgot") {
       setForgotEmail(""); setForgotError(null); setForgotSent(false);
@@ -79,20 +84,31 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError(null);
+    if (!loginCaptchaToken) {
+      setLoginError("لطفاً تأیید کپچا را کامل کنید.");
+      return;
+    }
     setLoginLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+        body: JSON.stringify({ email: loginEmail, password: loginPassword, captchaToken: loginCaptchaToken }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) { setLoginError(data?.error ?? "خطا در ورود"); return; }
+      if (!res.ok || !data?.ok) {
+        setLoginError(data?.error ?? "خطا در ورود");
+        loginTurnstileRef.current?.reset();
+        setLoginCaptchaToken(null);
+        return;
+      }
       onClose();
       router.push("/dashboard");
       router.refresh();
     } catch {
       setLoginError("خطای غیرمنتظره");
+      loginTurnstileRef.current?.reset();
+      setLoginCaptchaToken(null);
     } finally {
       setLoginLoading(false);
     }
@@ -101,20 +117,32 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setRegError(null);
+    if (!regName.trim()) { setRegError("نام الزامی است."); return; }
     if (regPassword.length < 8) { setRegError("رمز عبور باید حداقل ۸ کاراکتر باشد."); return; }
+    if (!regCaptchaToken) {
+      setRegError("لطفاً تأیید کپچا را کامل کنید.");
+      return;
+    }
     setRegLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: regEmail, password: regPassword, name: regName.trim() || undefined }),
+        body: JSON.stringify({ email: regEmail, password: regPassword, name: regName.trim(), captchaToken: regCaptchaToken }),
       });
       const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) { setRegError(data?.error ?? "خطا در ثبت‌نام"); return; }
+      if (!res.ok || !data?.ok) {
+        setRegError(data?.error ?? "خطا در ثبت‌نام");
+        regTurnstileRef.current?.reset();
+        setRegCaptchaToken(null);
+        return;
+      }
       onClose();
       router.push(`/check-email?email=${encodeURIComponent(regEmail)}`);
     } catch {
       setRegError("خطای غیرمنتظره");
+      regTurnstileRef.current?.reset();
+      setRegCaptchaToken(null);
     } finally {
       setRegLoading(false);
     }
@@ -176,7 +204,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
             <X className="w-4 h-4" />
           </button>
 
-          {/* ── FORGOT view: custom header with back button ── */}
+          {/* ── FORGOT view ── */}
           {activeTab === "forgot" ? (
             <div className="mb-5">
               <button
@@ -191,7 +219,6 @@ export default function AuthModal({ initialTab, onClose }: Props) {
               <p className="text-slate-500 text-sm mt-1">ایمیل حسابت رو وارد کن تا لینک بازیابی برات بفرستیم</p>
             </div>
           ) : (
-            /* ── LOGIN / REGISTER: tabs ── */
             <>
               <div className="flex bg-emerald-50 rounded-2xl p-1.5 mb-5 gap-1">
                 {(["login", "register"] as const).map((tab) => (
@@ -259,6 +286,20 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                 </div>
               </div>
 
+              {/* Turnstile */}
+              {TURNSTILE_SITE_KEY && (
+                <div className="flex justify-center pt-1">
+                  <Turnstile
+                    ref={loginTurnstileRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setLoginCaptchaToken(token)}
+                    onExpire={() => setLoginCaptchaToken(null)}
+                    onError={() => setLoginCaptchaToken(null)}
+                    options={{ theme: "light", language: "fa" }}
+                  />
+                </div>
+              )}
+
               {loginError && (
                 <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
                   {loginError}
@@ -267,8 +308,8 @@ export default function AuthModal({ initialTab, onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={loginLoading}
-                className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm mt-1 disabled:opacity-60"
+                disabled={loginLoading || (!!TURNSTILE_SITE_KEY && !loginCaptchaToken)}
+                className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm mt-1 disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
               >
                 {loginLoading ? "در حال ورود..." : "ورود به حساب"}
@@ -296,12 +337,15 @@ export default function AuthModal({ initialTab, onClose }: Props) {
           {activeTab === "register" && (
             <form onSubmit={handleRegister} className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">نام (اختیاری)</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  نام <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="علی احمدی"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
+                  required
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200/70 bg-white/70 text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition-all"
                 />
               </div>
@@ -337,6 +381,20 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                 </div>
               </div>
 
+              {/* Turnstile */}
+              {TURNSTILE_SITE_KEY && (
+                <div className="flex justify-center pt-1">
+                  <Turnstile
+                    ref={regTurnstileRef}
+                    siteKey={TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setRegCaptchaToken(token)}
+                    onExpire={() => setRegCaptchaToken(null)}
+                    onError={() => setRegCaptchaToken(null)}
+                    options={{ theme: "light", language: "fa" }}
+                  />
+                </div>
+              )}
+
               {regError && (
                 <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-600">
                   {regError}
@@ -345,8 +403,8 @@ export default function AuthModal({ initialTab, onClose }: Props) {
 
               <button
                 type="submit"
-                disabled={regLoading}
-                className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm disabled:opacity-60"
+                disabled={regLoading || (!!TURNSTILE_SITE_KEY && !regCaptchaToken)}
+                className="w-full py-3.5 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:-translate-y-0.5 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ background: `linear-gradient(270deg, ${BRAND} 0%, #14B8A6 100%)` }}
               >
                 {regLoading ? "در حال ثبت‌نام..." : "ساخت حساب رایگان"}
@@ -364,7 +422,6 @@ export default function AuthModal({ initialTab, onClose }: Props) {
           {/* ── FORGOT PASSWORD FORM ── */}
           {activeTab === "forgot" && (
             forgotSent ? (
-              /* Success */
               <div className="text-center space-y-4 py-2">
                 <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
                   <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -388,7 +445,6 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                 </button>
               </div>
             ) : (
-              /* Form */
               <form onSubmit={handleForgot} className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">ایمیل</label>

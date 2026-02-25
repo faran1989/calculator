@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 type AuthPayload = {
   userId: string;
   email: string;
+  name?: string;
 };
 
 function safeBase64Decode(input: string) {
@@ -26,7 +27,7 @@ export async function getAuthUser(): Promise<AuthPayload | null> {
   try {
     const obj = JSON.parse(json);
     if (!obj?.userId || !obj?.email) return null;
-    return { userId: String(obj.userId), email: String(obj.email) };
+    return { userId: String(obj.userId), email: String(obj.email), name: obj.name ? String(obj.name) : undefined };
   } catch {
     return null;
   }
