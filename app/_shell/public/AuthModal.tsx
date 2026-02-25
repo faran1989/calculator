@@ -84,7 +84,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginError(null);
-    if (!loginCaptchaToken) {
+    if (TURNSTILE_SITE_KEY && !loginCaptchaToken) {
       setLoginError("لطفاً تأیید کپچا را کامل کنید.");
       return;
     }
@@ -119,7 +119,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
     setRegError(null);
     if (!regName.trim()) { setRegError("نام الزامی است."); return; }
     if (regPassword.length < 8) { setRegError("رمز عبور باید حداقل ۸ کاراکتر باشد."); return; }
-    if (!regCaptchaToken) {
+    if (TURNSTILE_SITE_KEY && !regCaptchaToken) {
       setRegError("لطفاً تأیید کپچا را کامل کنید.");
       return;
     }

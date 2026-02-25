@@ -1,19 +1,21 @@
 /**
  * Cloudflare Turnstile server-side verification
  * Docs: https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
+ *
+ * اگر TURNSTILE_SECRET_KEY تنظیم نشده باشه (dev بدون config)، captcha skip می‌شه.
+ * اگر تنظیم شده باشه، token اجباری است و باید verify بشه.
  */
 
 const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 export async function verifyTurnstile(token: string | undefined | null): Promise<boolean> {
-  if (!token) return false;
-
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    // اگر secret تنظیم نشده (مثلاً dev بدون config) — رد کن
-    console.warn("[captcha] TURNSTILE_SECRET_KEY is not set");
-    return false;
-  }
+
+  // اگر secret تنظیم نشده → captcha غیرفعال است، skip کن
+  if (!secret) return true;
+
+  // secret تنظیم شده → token اجباری است
+  if (!token) return false;
 
   try {
     const res = await fetch(VERIFY_URL, {
