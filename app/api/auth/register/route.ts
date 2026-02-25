@@ -11,7 +11,7 @@ const BodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
   name: z.string().min(2),
-  captchaToken: z.string().optional(),
+  captchaToken: z.string().nullish(),
 });
 
 export async function POST(req: NextRequest) {

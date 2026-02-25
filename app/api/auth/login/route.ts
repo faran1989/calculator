@@ -9,7 +9,7 @@ import { verifyTurnstile } from "@/lib/captcha";
 const BodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  captchaToken: z.string().optional(),
+  captchaToken: z.string().nullish(),
 });
 
 export async function POST(req: NextRequest) {
