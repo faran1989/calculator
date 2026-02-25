@@ -295,7 +295,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                     onSuccess={(token) => setLoginCaptchaToken(token)}
                     onExpire={() => setLoginCaptchaToken(null)}
                     onError={() => setLoginCaptchaToken(null)}
-                    options={{ theme: "light", language: "fa" }}
+                    options={{ theme: "light", language: "auto", appearance: "always" }}
                   />
                 </div>
               )}
@@ -390,7 +390,7 @@ export default function AuthModal({ initialTab, onClose }: Props) {
                     onSuccess={(token) => setRegCaptchaToken(token)}
                     onExpire={() => setRegCaptchaToken(null)}
                     onError={() => setRegCaptchaToken(null)}
-                    options={{ theme: "light", language: "fa" }}
+                    options={{ theme: "light", language: "auto", appearance: "always" }}
                   />
                 </div>
               )}
