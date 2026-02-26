@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نشت‌یاب مالی — نسخه پیشرفته</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+:root{
+  --bg:#f5f3ef;--s1:#ffffff;--s2:#faf9f7;--s3:#f0eeea;
+  --border:#e2dfd8;--border2:#ece9e3;
+  --accent:#b8860b;--accent-l:rgba(184,134,11,.08);--accent-ll:rgba(184,134,11,.03);
+  --red:#c0392b;--red-l:rgba(192,57,43,.07);
+  --orange:#d35400;--orange-l:rgba(211,84,0,.07);
+  --green:#1a8a5c;--green-l:rgba(26,138,92,.07);
+  --blue:#2c3e50;--muted:#7c7770;--muted2:#9a948b;
+  --shadow: 0 18px 50px rgba(20,18,15,.08);
+  --shadow2: 0 10px 25px rgba(20,18,15,.08);
+  --radius: 18px;
+  --radius2: 14px;
+  --max: 1080px;
+  --grad: radial-gradient(1200px 500px at 80% -10%, rgba(184,134,11,.10), transparent 60%),
+          radial-gradient(900px 420px at 10% 0%, rgba(26,138,92,.08), transparent 60%),
+          radial-gradient(900px 420px at 95% 60%, rgba(192,57,43,.05), transparent 60%);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Vazirmatn',sans-serif;
+  background: var(--bg);
+  color:#1f1d1a;
+}
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  background:var(--grad);
+  pointer-events:none;
+}
+a{color:inherit}
+.wrap{
+  max-width:var(--max);
+  margin:0 auto;
+  padding:28px 18px 80px;
+}
+.header{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:20px 22px;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.header::after{
+  content:"";
+  position:absolute;inset:-1px;
+  background:linear-gradient(120deg, rgba(184,134,11,.12), transparent 35%, rgba(26,138,92,.10));
+  opacity:.35;pointer-events:none;
+}
+.h-left{position:relative;z-index:2}
+.h-title{
+  font-size:20px;font-weight:900;letter-spacing:-.5px;
+}
+.h-sub{
+  margin-top:6px;
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.9;
+}
+.h-right{display:flex;flex-direction:column;gap:8px;align-items:flex-end;position:relative;z-index:2}
+.badge{
+  font-size:11px;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--s2);
+  display:inline-flex;gap:6px;align-items:center;
+  color:var(--muted);
+}
+.badge b{color:var(--blue)}
+.small-note{
+  font-size:10px;color:var(--muted2);line-height:1.6;text-align:left;
+  max-width:220px;
+}
+.steps{
+  display:flex;gap:10px;
+  margin-top:16px;
+}
+.step{
+  flex:1;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:var(--shadow2);
+  position:relative;
+  overflow:hidden;
+}
+.step::after{
+  content:"";
+  position:absolute;inset:-1px;
+  background:linear-gradient(120deg, rgba(184,134,11,.12), transparent 50%);
+  opacity:.22;pointer-events:none;
+}
+.step .num{
+  width:32px;height:32px;border-radius:10px;
+  display:grid;place-items:center;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  font-weight:900;
+  color:var(--muted);
+}
+.step.on .num{background:var(--accent-l);border-color:rgba(184,134,11,.18);color:var(--accent)}
+.step.done .num{background:var(--green-l);border-color:rgba(26,138,92,.18);color:var(--green)}
+.step .lbl{font-size:12px;font-weight:800}
+.step .desc{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.6}
+.step .txt{display:flex;flex-direction:column}
+.mode-switch{
+  margin-top:16px;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:var(--radius2);
+  padding:14px 16px;
+  box-shadow:var(--shadow2);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+}
+.mode-left{display:flex;flex-direction:column;gap:3px}
+.mode-title{font-size:12px;font-weight:900}
+.mode-desc{font-size:10px;color:var(--muted);line-height:1.6}
+.toggle{
+  display:flex;align-items:center;gap:10px;
+}
+.toggle span{font-size:11px;color:var(--muted);font-weight:800}
+.switch{
+  width:52px;height:30px;border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--s3);
+  position:relative;cursor:pointer;transition:all .25s ease;
+}
+.knob{
+  width:24px;height:24px;border-radius:999px;
+  background:var(--s1);
+  border:1px solid var(--border2);
+  position:absolute;top:50%;transform:translateY(-50%);
+  left:3px;
+  box-shadow:0 6px 15px rgba(0,0,0,.08);
+  transition:all .25s ease;
+}
+.switch.on{
+  background:var(--accent-l);
+  border-color:rgba(184,134,11,.22);
+}
+.switch.on .knob{left:25px;border-color:rgba(184,134,11,.25)}
+.form{
+  margin-top:16px;
+  display:grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap:14px;
+  align-items:start;
+}
+.card{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px 18px 16px;
+}
+.card-title{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.card-title h2{
+  margin:0;
+  font-size:14px;
+  letter-spacing:-.2px;
+}
+.card-title .hint{
+  font-size:10px;
+  color:var(--muted);
+  background:var(--s2);
+  border:1px solid var(--border2);
+  padding:7px 10px;border-radius:999px;
+}
+.field{
+  margin-top:14px;
+  display:flex;flex-direction:column;gap:6px;
+}
+label{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:800;
+}
+.fi-wrap{
+  position:relative;
+}
+.fi{
+  width:100%;
+  height:46px;
+  border-radius:14px;
+  border:1.5px solid var(--border);
+  background:var(--s2);
+  padding:0 14px;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:-.3px;
+  outline:none;
+  transition:all .2s ease;
+}
+.fi:focus{
+  border-color:rgba(184,134,11,.5);
+  box-shadow:0 0 0 4px rgba(184,134,11,.07);
+  background:#fff;
+}
+.fi-sfx{
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:11px;
+  color:var(--muted2);
+  font-weight:800;
+  pointer-events:none;
+}
+.grid2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.acc{
+  margin-top:12px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  background:var(--s1);
+  box-shadow:var(--shadow2);
+  transition:all .25s ease;
+  animation: fUp .4s ease both;
+}
+.acc.lit{
+  border-color:rgba(184,134,11,.25);
+  box-shadow:0 16px 45px rgba(184,134,11,.08);
+}
+.acc-hd{
+  padding:14px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  cursor:pointer;
+  background:linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.01));
+}
+.acc-ico{
+  width:34px;height:34px;border-radius:12px;
+  display:grid;place-items:center;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  font-size:16px;
+  flex-shrink:0;
+}
+.acc-inf{display:flex;flex-direction:column;gap:2px;min-width:0}
+.acc-ttl{font-size:13px;font-weight:900}
+.acc-tot{font-size:11px;color:var(--muted);font-weight:800}
+.acc-r{display:flex;align-items:center;gap:8px}
+.acc-badge{
+  display:none;
+  font-size:10px;
+  font-weight:900;
+  padding:6px 10px;
+  border-radius:999px;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  color:var(--muted);
+}
+.acc-arr{font-size:14px;color:var(--muted);transition:transform .25s ease}
+.acc.open .acc-arr{transform:rotate(180deg)}
+.acc-prog{
+  height:6px;
+  background:var(--s3);
+  border-top:1px solid var(--border2);
+}
+.acc-prog-fill{
+  height:100%;
+  width:0%;
+  background:var(--green);
+  transition:width .35s ease;
+}
+.acc-body{
+  padding:12px 14px 16px;
+  border-top:1px solid var(--border2);
+  display:none;
+}
+.acc.open .acc-body{display:block}
+.sub-note{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.9;
+  margin:0 0 10px;
+}
+.sub-grp-ttl{
+  margin:12px 0 8px;
+  font-size:11px;
+  font-weight:900;
+  color:var(--blue);
+  display:flex;align-items:center;gap:8px;
+}
+.sub-grp-ttl::before{
+  content:"";
+  width:10px;height:10px;border-radius:3px;
+  background:var(--accent-l);
+  border:1px solid rgba(184,134,11,.2);
+}
+.sub{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 0;
+  border-bottom:1px dashed var(--border2);
+}
+.sub:last-child{border-bottom:none}
+.sub-lbl{font-size:12px;font-weight:800;color:var(--blue)}
+.fi.sm{height:42px;border-radius:12px;font-size:13px}
+.btn{
+  margin-top:14px;
+  width:100%;
+  height:48px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--s3);
+  font-family:'Vazirmatn',sans-serif;
+  font-weight:900;
+  font-size:13px;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn-primary{
+  background:linear-gradient(135deg, rgba(184,134,11,.18), rgba(184,134,11,.08));
+  border-color:rgba(184,134,11,.25);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 16px 35px rgba(184,134,11,.12)}
+.sidebar{
+  position:sticky;
+  top:16px;
+}
+.side-box{
+  margin-top:12px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:var(--s1);
+  box-shadow:var(--shadow2);
+  padding:14px;
+}
+.side-box h3{margin:0 0 8px;font-size:12px;font-weight:900}
+.side-box p{margin:0;font-size:11px;color:var(--muted);line-height:1.9}
+.live{
+  display:flex;flex-direction:column;gap:10px;
+}
+.live-row{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:12px;
+  border-bottom:1px solid var(--border2);
+  padding:8px 0;
+}
+.live-row:last-child{border-bottom:none}
+.live-row b{font-weight:900}
+.live-row .v{font-weight:900}
+.v.green{color:var(--green)}
+.v.red{color:var(--red)}
+.v.orange{color:var(--orange)}
+.v.accent{color:var(--accent)}
+
+.quick-mode .acc-body{display:none!important}
+.quick-mode .acc{opacity:1}
+.quick-mode .acc-hd{cursor:default}
+.quick-mode .acc-arr{display:none}
+.quick-mode .acc-prog{display:none}
+.quick-mode .acc-badge{display:none!important}
+.quick-mode .acc-quick{
+  padding:12px 14px 16px;
+  border-top:1px solid var(--border2);
+  display:block;
+}
+.acc-quick{display:none}
+.acc-quick .sub{border-bottom:none;padding:0;margin-top:6px}
+.acc-quick .sub-lbl{font-size:11px;color:var(--muted)}
+.acc-quick .fi.sm{height:44px}
+
+.result{
+  margin-top:16px;
+  display:none;
+}
+.r-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  align-items:start;
+}
+.r-card{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.r-card h3{margin:0 0 10px;font-size:13px;font-weight:900}
+.r-card .mini{font-size:11px;color:var(--muted);line-height:1.9;margin:0}
+
+.mirror{
+  margin-top:10px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:14px;
+  padding:14px;
+  font-size:12px;
+  line-height:2;
+  color:var(--blue);
+}
+.summary{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.sr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;
+  border-radius:12px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  font-size:12px;
+}
+.sr-lbl{color:var(--muted);font-weight:800}
+.sr-val{font-weight:900;color:var(--blue)}
+.sr-val.green{color:var(--green)}
+.sr-val.red{color:var(--red)}
+.sr-total{background:linear-gradient(135deg, rgba(184,134,11,.08), rgba(26,138,92,.06));border-color:rgba(184,134,11,.16)}
+.bars{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.cbar{
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  padding:12px;
+}
+.cbar-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cbar-left{display:flex;align-items:center;gap:8px;min-width:0}
+.cbar-name{font-size:12px;font-weight:900}
+.cbar-amt{font-size:11px;color:var(--muted);font-weight:900}
+.cbar-right{display:flex;align-items:center;gap:8px}
+.ctag{
+  font-size:10px;font-weight:900;
+  padding:6px 10px;border-radius:999px;
+  border:1px solid var(--border2);
+  background:var(--s3);
+  color:var(--muted);
+}
+.ctag.t-max{background:var(--red-l);border-color:rgba(192,57,43,.2);color:var(--red)}
+.ctag.t-hi{background:var(--orange-l);border-color:rgba(211,84,0,.2);color:var(--orange)}
+.ctag.t-mild{background:var(--accent-ll);border-color:rgba(184,134,11,.22);color:var(--accent)}
+.ctag.t-ok{background:var(--green-l);border-color:rgba(26,138,92,.2);color:var(--green)}
+.ctag.t-zero{background:rgba(124,119,112,.07);border-color:rgba(124,119,112,.2);color:var(--muted)}
+.cbar-pct{font-weight:900;font-size:11px}
+.cbar-track{
+  position:relative;
+  height:10px;
+  background:rgba(0,0,0,.05);
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:10px;
+}
+.cbar-ideal-zone{
+  position:absolute;top:0;bottom:0;
+  background:rgba(26,138,92,.10);
+}
+.cbar-ideal-end{
+  position:absolute;top:-4px;bottom:-4px;
+  width:2px;background:rgba(26,138,92,.35);
+}
+.cbar-fill{
+  position:absolute;top:0;bottom:0;right:0;
+  width:0%;
+  background:var(--green);
+  border-radius:999px;
+  transition:width .55s ease;
+}
+.leaks{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.leak-card{
+  border-radius:18px;
+  border:1px solid rgba(192,57,43,.18);
+  background:linear-gradient(135deg, rgba(192,57,43,.06), rgba(184,134,11,.04));
+  padding:16px;
+}
+.leak-card.secondary{
+  border-color:rgba(211,84,0,.18);
+  background:linear-gradient(135deg, rgba(211,84,0,.05), rgba(184,134,11,.03));
+}
+.leak-inner{display:flex;flex-direction:column;gap:8px}
+.leak-cat{
+  font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);font-weight:800;
+}
+.leak-name{font-size:14px;font-weight:900;color:var(--blue)}
+.leak-sub{font-size:11px;color:var(--muted);line-height:1.9}
+.leak-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:6px;
+}
+.ls{
+  background:rgba(255,255,255,.55);
+  border:1px solid rgba(226,223,216,.8);
+  border-radius:14px;
+  padding:10px;
+}
+.ls-l{font-size:10px;color:var(--muted);font-weight:800}
+.ls-v{font-size:12px;font-weight:900;color:var(--blue);margin-top:4px}
+.top-items{margin-top:8px}
+.top-items-ttl{font-size:11px;font-weight:900;color:var(--blue);margin-bottom:6px}
+.top-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.6);
+  border:1px solid rgba(226,223,216,.8);
+  font-size:11px;
+}
+.top-item-name{color:var(--muted);font-weight:800}
+.top-item-val{font-weight:900}
+.top-item-pct{font-weight:900;color:var(--accent)}
+
+.peer-card{margin-top:10px}
+.peer-title{font-size:12px;font-weight:900;margin:0 0 10px}
+.peer-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  border-radius:14px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  margin-top:8px;
+}
+.peer-emoji{font-size:16px}
+.peer-info{flex:1;min-width:0}
+.peer-label{font-size:12px;font-weight:900}
+.peer-desc{font-size:10px;color:var(--muted);line-height:1.7;margin-top:2px}
+.peer-status{
+  font-size:10px;font-weight:900;
+  padding:6px 10px;border-radius:999px;
+  border:1px solid rgba(0,0,0,.05);
+  white-space:nowrap;
+}
+.action-card{
+  grid-column:1/-1;
+  padding:0;
+  overflow:hidden;
+}
+.action-head{
+  padding:18px 18px 14px;
+  border-bottom:1px solid var(--border2);
+  background:linear-gradient(135deg, rgba(26,138,92,.06), rgba(184,134,11,.06));
+}
+.layer-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:10px;font-weight:900;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:10px;
+}
+.layer-tag-num{
+  width:26px;height:26px;border-radius:10px;
+  display:grid;place-items:center;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  color:var(--muted);
+}
+.layer-tag-txt{font-weight:900}
+.action-title{font-size:16px;font-weight:900;color:var(--blue);margin:0 0 8px}
+.action-sub{font-size:11px;color:var(--muted);line-height:1.9;margin:0}
+.action-body{padding:16px 18px 18px}
+.a-steps{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+.a-step{
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  padding:12px;
+  position:relative;
+  overflow:hidden;
+}
+.a-step::after{
+  content:"";
+  position:absolute;inset:-1px;
+  background:linear-gradient(120deg, rgba(184,134,11,.10), transparent 45%);
+  opacity:.22;pointer-events:none;
+}
+.a-step-line{
+  position:absolute;right:0;top:0;bottom:0;width:4px;
+  background:rgba(184,134,11,.25);
+}
+.a-step-left{display:flex;align-items:flex-start;justify-content:flex-end}
+.a-num{
+  width:30px;height:30px;border-radius:12px;
+  display:grid;place-items:center;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  font-weight:900;color:var(--accent);
+}
+.a-content{margin-top:10px}
+.a-ttl{font-size:12px;font-weight:900;margin:0 0 6px}
+.a-body{font-size:11px;color:var(--muted);line-height:1.9;margin:0}
+.a-box{
+  margin-top:10px;
+  background:rgba(26,138,92,.07);
+  border:1px solid rgba(26,138,92,.18);
+  border-radius:14px;
+  padding:10px;
+  font-size:11px;
+  line-height:1.9;
+  color:var(--blue);
+}
+.a-time{
+  margin-top:10px;
+  display:flex;align-items:center;gap:8px;
+  font-size:10px;
+  color:var(--muted);
+  font-weight:900;
+}
+.a-time-dot{
+  width:8px;height:8px;border-radius:999px;
+  background:var(--accent);
+  box-shadow:0 0 0 4px rgba(184,134,11,.12);
+}
+.action-savings{
+  margin-top:10px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px 14px;
+}
+.as-l{font-size:11px;color:var(--muted);font-weight:800}
+.as-v{font-size:14px;font-weight:900;color:var(--green)}
+.as-s{font-size:10px;color:var(--muted2);font-weight:800}
+.rules-card{grid-column:1/-1}
+.rules-title{font-size:12px;font-weight:900;margin:0 0 10px}
+.rule-item{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 12px;
+  border-radius:14px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  margin-top:8px;
+  font-size:12px;
+  line-height:1.8;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.rule-item:hover{transform:translateY(-1px);border-color:rgba(184,134,11,.25)}
+.rule-num{
+  width:28px;height:28px;border-radius:12px;
+  display:grid;place-items:center;
+  background:var(--s3);
+  border:1px solid var(--border2);
+  font-weight:900;color:var(--muted);
+  flex-shrink:0;
+}
+.whatif-card{grid-column:1/-1}
+.whatif-title{font-size:12px;font-weight:900;margin:0 0 10px}
+.whatif-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  border-radius:14px;
+  padding:12px 12px;
+  margin-top:8px;
+}
+.whatif-label{font-size:12px;font-weight:900}
+.whatif-slider-wrap{display:flex;align-items:center;gap:10px}
+.whatif-slider{width:210px}
+.whatif-val{font-size:10px;color:var(--muted);font-weight:900;min-width:120px;text-align:left}
+.whatif-result{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+.whatif-result-item{
+  background:linear-gradient(135deg, rgba(26,138,92,.06), rgba(184,134,11,.05));
+  border:1px solid rgba(184,134,11,.16);
+  border-radius:16px;
+  padding:12px;
+}
+.whatif-result-label{font-size:10px;color:var(--muted);font-weight:900}
+.whatif-result-val{font-size:18px;font-weight:800;color:var(--blue)}
+
+/* SHARE */
+.share-bar{display:flex;gap:8px;margin-top:4px}
+.share-btn{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--s1);font-family:'Vazirmatn',sans-serif;font-size:11px;font-weight:900;cursor:pointer}
+.share-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.06)}
+
+.health-score-card{
+  grid-column:1/-1;
+  padding:20px 22px;
+}
+.hs-title{font-size:12px;font-weight:900;color:var(--blue)}
+.hs-circle-wrap{display:flex;align-items:center;gap:16px;margin-top:12px}
+.hs-num{display:flex;flex-direction:column;gap:3px}
+.hs-num-val{font-size:44px;font-weight:900;line-height:1}
+.hs-num-label{font-size:12px;color:var(--muted);font-weight:900}
+.hs-desc{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.9}
+.hs-factors{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.hs-factor{
+  font-size:10px;font-weight:900;
+  padding:7px 10px;border-radius:999px;
+  background:var(--s2);
+  border:1px solid var(--border2);
+  color:var(--muted);
+  display:inline-flex;gap:8px;align-items:center;
+}
+.hs-factor-dot{width:8px;height:8px;border-radius:999px;background:var(--green)}
+.hs-circle-bg{fill:none;stroke:rgba(0,0,0,.06);stroke-width:12}
+.hs-circle-fill{fill:none;stroke-width:12;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1.2s ease}
+.hs-circle{width:160px;height:160px}
+
+@media (max-width: 920px){
+  .form{grid-template-columns:1fr}
+  .sidebar{position:static}
+  .r-grid{grid-template-columns:1fr}
+  .a-steps{grid-template-columns:1fr}
+  .whatif-result{grid-template-columns:1fr}
+  .whatif-slider{width:160px}
+}
+
+/* ANNUAL */
+.annual-row{display:grid;grid-template-columns:1fr 112px;gap:10px;align-items:center}
+.annual-month{width:112px;height:42px;border-radius:11px;border:1.5px solid var(--border);background:var(--s3);font-family:'Vazirmatn',sans-serif;font-size:12px;font-weight:700;color:var(--text);padding:0 12px;outline:none}
+.annual-month:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,134,11,.06)}
+
+/* ACHIEVEMENT */
+.ach-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:10px;box-shadow:var(--shadow)}
+.ach-title{font-size:11px;letter-spacing:3px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.ach-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px}
+.ach-row:last-child{border-bottom:none}
+.ach-val{font-weight:800;letter-spacing:-.2px}
+
+/* RULE COPY */
+.rule-main{flex:1;min-width:0}
+.rule-copy{border:none;background:var(--s1);border:1px solid var(--border2);color:var(--muted);border-radius:9px;padding:8px 10px;font-family:'Vazirmatn',sans-serif;font-size:10px;font-weight:800;cursor:pointer;transition:all .2s;flex-shrink:0}
+.rule-copy:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-ll)}
+.rule-copied{border-color:rgba(26,138,92,.25)!important;color:var(--green)!important;background:var(--green-l)!important}
+
+/* PRINT */
+.print-only{display:none}
+@media print{
+  body{background:#fff}
+  body::before{display:none}
+  .wrap{max-width:none;padding:0}
+  #form,.mode-switch,.steps,.share-bar,.btn,#analyzeBtn{display:none!important}
+  #result{display:block!important}
+  .r-card,.health-score-card,.peer-card,.leak-card,.action-card,.rules-card,.whatif-card,.ach-card{box-shadow:none!important}
+  .print-only{display:block}
+  .no-print{display:none!important}
+}
+
+@keyframes fUp{
+  from{transform:translateY(6px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="h-left">
+      <div class="h-title">نشت‌یاب مالی — نسخه پیشرفته</div>
+      <div class="h-sub">
+        این ابزار «تخمینی» است: کمک می‌کند الگوی خرج‌کردن روشن شود، نه اینکه آینده را پیش‌بینی کند.
+        اعداد را حدودی وارد کنید؛ مهم‌تر از دقت، <b>آگاهی</b> است.
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="badge">🎯 هدف: <b>شفاف‌سازی</b> نشت‌ها</div>
+      <div class="small-note">ساده بمان. با چند عدد کلی شروع کن؛ اگر لازم شد، جزئیات را باز کن.</div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step on" id="s1">
+      <div class="num">1</div>
+      <div class="txt">
+        <div class="lbl">ورودی‌ها</div>
+        <div class="desc">درآمد + هزینه‌ها</div>
+      </div>
+    </div>
+    <div class="step" id="s2">
+      <div class="num">2</div>
+      <div class="txt">
+        <div class="lbl">تحلیل</div>
+        <div class="desc">نشت‌های اصلی</div>
+      </div>
+    </div>
+    <div class="step" id="s3">
+      <div class="num">3</div>
+      <div class="txt">
+        <div class="lbl">اقدام</div>
+        <div class="desc">قانون + سناریو</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mode-switch">
+    <div class="mode-left">
+      <div class="mode-title">حالت سریع / دقیق</div>
+      <div class="mode-desc">حالت سریع فقط ۷ عدد کلی می‌خواهد. حالت دقیق برای باز کردن جزئیات هر دسته است.</div>
+    </div>
+    <div class="toggle">
+      <span id="modeLbl">حالت سریع</span>
+      <div class="switch" id="modeSw" onclick="toggleMode()">
+        <div class="knob"></div>
+      </div>
+      <span>حالت دقیق</span>
+    </div>
+  </div>
+
+  <div class="form" id="form">
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <h2>۱) درآمد و پس‌انداز</h2>
+          <div class="hint">ماهانه (تومان)</div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label>درآمد خالص ماهانه</label>
+            <div class="fi-wrap">
+              <input class="fi" id="income" inputmode="numeric" placeholder="مثلاً ۳۰,۰۰۰,۰۰۰" oninput="onIncome(this)">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>پس‌انداز ماهانه (اختیاری)</label>
+            <div class="fi-wrap">
+              <input class="fi" id="saving" inputmode="numeric" placeholder="۰" oninput="onField(this,'saving')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-note" style="margin-top:10px">
+          اگر دقیق نمی‌دانید، حدودی وارد کنید. هر زمان خواستید می‌توانید جزئیات را باز کنید.
+        </div>
+      </div>
+
+      <!-- ACCORDIONS -->
+      <div class="acc" id="acc-housing" style="animation-delay:.05s">
+        <div class="acc-hd" onclick="togAcc('housing')">
+          <div class="acc-ico">🏠</div>
+          <div class="acc-inf">
+            <div class="acc-ttl">مسکن</div>
+            <div class="acc-tot" id="tot-housing">— ثبت نشده</div>
+          </div>
+          <div class="acc-r"><span class="acc-badge" id="badge-housing"></span><span class="acc-arr">▼</span></div>
+        </div>
+        <div class="acc-prog"><div class="acc-prog-fill" id="prog-housing"></div></div>
+        <div class="acc-quick">
+          <div class="sub">
+            <div class="sub-lbl">عدد کلی مسکن</div>
+            <div class="fi-wrap">
+              <input class="fi sm" id="q_housing" inputmode="numeric" placeholder="۰" oninput="onField(this,'housing')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="acc-body">
+          <p class="sub-note">اگر اجاره/قسط دارید، همین‌جا وارد کنید. (اختیاری)</p>
+          <div class="sub-grp-ttl">موارد رایج</div>
+          <div class="sub"><div class="sub-lbl">اجاره</div><div class="fi-wrap"><input class="fi sm" id="rent" inputmode="numeric" placeholder="۰" oninput="onField(this,'housing')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">قسط وام مسکن</div><div class="fi-wrap"><input class="fi sm" id="mortgage" inputmode="numeric" placeholder="۰" oninput="onField(this,'housing')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">شارژ / تعمیرات</div><div class="fi-wrap"><input class="fi sm" id="charge" inputmode="numeric" placeholder="۰" oninput="onField(this,'housing')"><span class="fi-sfx">تومان</span></div></div>
+        </div>
+      </div>
+
+      <div class="acc" id="acc-food" style="animation-delay:.10s">
+        <div class="acc-hd" onclick="togAcc('food')">
+          <div class="acc-ico">🍽️</div>
+          <div class="acc-inf">
+            <div class="acc-ttl">خوراک</div>
+            <div class="acc-tot" id="tot-food">— ثبت نشده</div>
+          </div>
+          <div class="acc-r"><span class="acc-badge" id="badge-food"></span><span class="acc-arr">▼</span></div>
+        </div>
+        <div class="acc-prog"><div class="acc-prog-fill" id="prog-food"></div></div>
+        <div class="acc-quick">
+          <div class="sub">
+            <div class="sub-lbl">عدد کلی خوراک</div>
+            <div class="fi-wrap">
+              <input class="fi sm" id="q_food" inputmode="numeric" placeholder="۰" oninput="onField(this,'food')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="acc-body">
+          <p class="sub-note">اگر بیرون‌خوری بالاست، این دسته معمولاً اولین نشت است.</p>
+          <div class="sub-grp-ttl">موارد رایج</div>
+          <div class="sub"><div class="sub-lbl">خرید سوپرمارکت</div><div class="fi-wrap"><input class="fi sm" id="grocery" inputmode="numeric" placeholder="۰" oninput="onField(this,'food')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">رستوران</div><div class="fi-wrap"><input class="fi sm" id="restaurant" inputmode="numeric" placeholder="۰" oninput="onField(this,'food')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">کافه</div><div class="fi-wrap"><input class="fi sm" id="cafe" inputmode="numeric" placeholder="۰" oninput="onField(this,'food')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">سفارش آنلاین</div><div class="fi-wrap"><input class="fi sm" id="delivery" inputmode="numeric" placeholder="۰" oninput="onField(this,'food')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">ناهار بیرون</div><div class="fi-wrap"><input class="fi sm" id="lunch_out" inputmode="numeric" placeholder="۰" oninput="onField(this,'food')"><span class="fi-sfx">تومان</span></div></div>
+        </div>
+      </div>
+
+      <div class="acc" id="acc-transport" style="animation-delay:.15s">
+        <div class="acc-hd" onclick="togAcc('transport')">
+          <div class="acc-ico">🚗</div>
+          <div class="acc-inf">
+            <div class="acc-ttl">حمل‌ونقل</div>
+            <div class="acc-tot" id="tot-transport">— ثبت نشده</div>
+          </div>
+          <div class="acc-r"><span class="acc-badge" id="badge-transport"></span><span class="acc-arr">▼</span></div>
+        </div>
+        <div class="acc-prog"><div class="acc-prog-fill" id="prog-transport"></div></div>
+        <div class="acc-quick">
+          <div class="sub">
+            <div class="sub-lbl">عدد کلی حمل‌ونقل</div>
+            <div class="fi-wrap">
+              <input class="fi sm" id="q_transport" inputmode="numeric" placeholder="۰" oninput="onField(this,'transport')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="acc-body">
+          <p class="sub-note">برای تاکسی و سوخت اگر عدد جدا دارید وارد کنید.</p>
+          <div class="sub-grp-ttl">موارد رایج</div>
+          <div class="sub"><div class="sub-lbl">سوخت</div><div class="fi-wrap"><input class="fi sm" id="fuel" inputmode="numeric" placeholder="۰" oninput="onField(this,'transport')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">تاکسی/اینترنتی</div><div class="fi-wrap"><input class="fi sm" id="taxi" inputmode="numeric" placeholder="۰" oninput="onField(this,'transport')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">حمل‌ونقل عمومی</div><div class="fi-wrap"><input class="fi sm" id="public" inputmode="numeric" placeholder="۰" oninput="onField(this,'transport')"><span class="fi-sfx">تومان</span></div></div>
+        </div>
+      </div>
+
+      <div class="acc" id="acc-lifestyle" style="animation-delay:.20s">
+        <div class="acc-hd" onclick="togAcc('lifestyle')">
+          <div class="acc-ico">✨</div>
+          <div class="acc-inf">
+            <div class="acc-ttl">سبک زندگی</div>
+            <div class="acc-tot" id="tot-lifestyle">— ثبت نشده</div>
+          </div>
+          <div class="acc-r"><span class="acc-badge" id="badge-lifestyle"></span><span class="acc-arr">▼</span></div>
+        </div>
+        <div class="acc-prog"><div class="acc-prog-fill" id="prog-lifestyle"></div></div>
+        <div class="acc-quick">
+          <div class="sub">
+            <div class="sub-lbl">عدد کلی سبک زندگی</div>
+            <div class="fi-wrap">
+              <input class="fi sm" id="q_lifestyle" inputmode="numeric" placeholder="۰" oninput="onField(this,'lifestyle')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="acc-body">
+          <p class="sub-note">خریدهای هیجانی معمولاً اینجا پنهان می‌شوند.</p>
+          <div class="sub-grp-ttl">موارد رایج</div>
+          <div class="sub"><div class="sub-lbl">پوشاک</div><div class="fi-wrap"><input class="fi sm" id="clothing" inputmode="numeric" placeholder="۰" oninput="onField(this,'lifestyle')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">تفریح/سرگرمی</div><div class="fi-wrap"><input class="fi sm" id="entertain" inputmode="numeric" placeholder="۰" oninput="onField(this,'lifestyle')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">خریدهای کوچک روزانه</div><div class="fi-wrap"><input class="fi sm" id="small" inputmode="numeric" placeholder="۰" oninput="onField(this,'lifestyle')"><span class="fi-sfx">تومان</span></div></div>
+        </div>
+      </div>
+
+      <div class="acc" id="acc-bills" style="animation-delay:.25s">
+        <div class="acc-hd" onclick="togAcc('bills')">
+          <div class="acc-ico">🧾</div>
+          <div class="acc-inf">
+            <div class="acc-ttl">قبوض و خدمات</div>
+            <div class="acc-tot" id="tot-bills">— ثبت نشده</div>
+          </div>
+          <div class="acc-r"><span class="acc-badge" id="badge-bills"></span><span class="acc-arr">▼</span></div>
+        </div>
+        <div class="acc-prog"><div class="acc-prog-fill" id="prog-bills"></div></div>
+        <div class="acc-quick">
+          <div class="sub">
+            <div class="sub-lbl">عدد کلی قبوض</div>
+            <div class="fi-wrap">
+              <input class="fi sm" id="q_bills" inputmode="numeric" placeholder="۰" oninput="onField(this,'bills')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="acc-body">
+          <p class="sub-note">این دسته معمولاً نشت بزرگ نیست؛ اما جمع‌شدنش مهم است.</p>
+          <div class="sub-grp-ttl">موارد رایج</div>
+          <div class="sub"><div class="sub-lbl">آب/برق/گاز</div><div class="fi-wrap"><input class="fi sm" id="utilities" inputmode="numeric" placeholder="۰" oninput="onField(this,'bills')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">اینترنت/موبایل</div><div class="fi-wrap"><input class="fi sm" id="internet" inputmode="numeric" placeholder="۰" oninput="onField(this,'bills')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">اشتراک‌ها</div><div class="fi-wrap"><input class="fi sm" id="subs" inputmode="numeric" placeholder="۰" oninput="onField(this,'bills')"><span class="fi-sfx">تومان</span></div></div>
+        </div>
+      </div>
+
+      <div class="acc" id="acc-finance" style="animation-delay:.30s">
+        <div class="acc-hd" onclick="togAcc('finance')">
+          <div class="acc-ico">💳</div>
+          <div class="acc-inf">
+            <div class="acc-ttl">بدهی‌ها</div>
+            <div class="acc-tot" id="tot-finance">— ثبت نشده</div>
+          </div>
+          <div class="acc-r"><span class="acc-badge" id="badge-finance"></span><span class="acc-arr">▼</span></div>
+        </div>
+        <div class="acc-prog"><div class="acc-prog-fill" id="prog-finance"></div></div>
+        <div class="acc-quick">
+          <div class="sub">
+            <div class="sub-lbl">عدد کلی بدهی‌ها</div>
+            <div class="fi-wrap">
+              <input class="fi sm" id="q_finance" inputmode="numeric" placeholder="۰" oninput="onField(this,'finance')">
+              <span class="fi-sfx">تومان</span>
+            </div>
+          </div>
+        </div>
+        <div class="acc-body">
+          <p class="sub-note">اگر اقساط/بدهی دارید، سهمش را جدا ببینید.</p>
+          <div class="sub-grp-ttl">موارد رایج</div>
+          <div class="sub"><div class="sub-lbl">قسط وام</div><div class="fi-wrap"><input class="fi sm" id="loan" inputmode="numeric" placeholder="۰" oninput="onField(this,'finance')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">کارت/اقساط</div><div class="fi-wrap"><input class="fi sm" id="installment" inputmode="numeric" placeholder="۰" oninput="onField(this,'finance')"><span class="fi-sfx">تومان</span></div></div>
+          <div class="sub"><div class="sub-lbl">خرید اقساطی (BNPL)</div><div class="fi-wrap"><input class="fi sm" id="credit_inst" inputmode="numeric" placeholder="۰" oninput="onField(this,'finance')"><span class="fi-sfx">تومان</span></div></div>
+        </div>
+      </div>
+
+<div class="acc" id="acc-annual" style="animation-delay:.30s">
+  <div class="acc-hd" onclick="togAcc('annual')">
+    <div class="acc-ico" style="background:rgba(184,134,11,.06);border:1px solid rgba(184,134,11,.1)">🗓️</div>
+    <div class="acc-inf">
+      <div class="acc-ttl">هزینه‌های بزرگ سالانه</div>
+      <div class="acc-tot" id="tot-annual">— ثبت‌شده</div>
+    </div>
+    <div class="acc-r"><span class="acc-badge" id="badge-annual"></span><span class="acc-arr">▼</span></div>
+  </div>
+  <div class="acc-prog"><div class="acc-prog-fill" id="prog-annual"></div></div>
+  <div class="acc-body">
+    <div class="sub-note" style="margin-top:10px">
+      این‌ها ماهانه نیستند، ولی اگر از قبل «میانگین ماهانه» کنار نگذارید، یک‌دفعه به بودجه فشار می‌آورند.
+    </div>
+
+    <div class="sub-grp-ttl">موارد رایج</div>
+
+    <div class="sub">
+      <div class="sub-lbl">بیمه شخص ثالث / بدنه <span style="font-size:10px;color:var(--muted2)">ماه تقریبی</span></div>
+      <div class="annual-row">
+        <div class="fi-wrap"><input class="fi sm" id="annual_insurance" inputmode="numeric" placeholder="مبلغ سالانه" oninput="onAnnualField(this)"><span class="fi-sfx">تومان</span></div>
+        <select class="annual-month" id="annual_m_insurance" onchange="onAnnualMonth()">
+          <option value="">ماه</option><option>فروردین</option><option>اردیبهشت</option><option>خرداد</option><option>تیر</option><option>مرداد</option><option>شهریور</option><option>مهر</option><option>آبان</option><option>آذر</option><option>دی</option><option>بهمن</option><option>اسفند</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sub">
+      <div class="sub-lbl">عیدی / پاداش / هدیه‌های مناسبتی <span style="font-size:10px;color:var(--muted2)">ماه تقریبی</span></div>
+      <div class="annual-row">
+        <div class="fi-wrap"><input class="fi sm" id="annual_bonus" inputmode="numeric" placeholder="مبلغ سالانه" oninput="onAnnualField(this)"><span class="fi-sfx">تومان</span></div>
+        <select class="annual-month" id="annual_m_bonus" onchange="onAnnualMonth()">
+          <option value="">ماه</option><option>فروردین</option><option>اردیبهشت</option><option>خرداد</option><option>تیر</option><option>مرداد</option><option>شهریور</option><option>مهر</option><option>آبان</option><option>آذر</option><option>دی</option><option>بهمن</option><option>اسفند</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sub">
+      <div class="sub-lbl">تعمیرات بزرگ (خانه/خودرو) <span style="font-size:10px;color:var(--muted2)">ماه تقریبی</span></div>
+      <div class="annual-row">
+        <div class="fi-wrap"><input class="fi sm" id="annual_repair" inputmode="numeric" placeholder="مبلغ سالانه" oninput="onAnnualField(this)"><span class="fi-sfx">تومان</span></div>
+        <select class="annual-month" id="annual_m_repair" onchange="onAnnualMonth()">
+          <option value="">ماه</option><option>فروردین</option><option>اردیبهشت</option><option>خرداد</option><option>تیر</option><option>مرداد</option><option>شهریور</option><option>مهر</option><option>آبان</option><option>آذر</option><option>دی</option><option>بهمن</option><option>اسفند</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sub">
+      <div class="sub-lbl">شهریه مدرسه/کلاس‌ها <span style="font-size:10px;color:var(--muted2)">ماه تقریبی</span></div>
+      <div class="annual-row">
+        <div class="fi-wrap"><input class="fi sm" id="annual_tuition" inputmode="numeric" placeholder="مبلغ سالانه" oninput="onAnnualField(this)"><span class="fi-sfx">تومان</span></div>
+        <select class="annual-month" id="annual_m_tuition" onchange="onAnnualMonth()">
+          <option value="">ماه</option><option>فروردین</option><option>اردیبهشت</option><option>خرداد</option><option>تیر</option><option>مرداد</option><option>شهریور</option><option>مهر</option><option>آبان</option><option>آذر</option><option>دی</option><option>بهمن</option><option>اسفند</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sub">
+      <div class="sub-lbl">سفر سالانه <span style="font-size:10px;color:var(--muted2)">ماه تقریبی</span></div>
+      <div class="annual-row">
+        <div class="fi-wrap"><input class="fi sm" id="annual_travel" inputmode="numeric" placeholder="مبلغ سالانه" oninput="onAnnualField(this)"><span class="fi-sfx">تومان</span></div>
+        <select class="annual-month" id="annual_m_travel" onchange="onAnnualMonth()">
+          <option value="">ماه</option><option>فروردین</option><option>اردیبهشت</option><option>خرداد</option><option>تیر</option><option>مرداد</option><option>شهریور</option><option>مهر</option><option>آبان</option><option>آذر</option><option>دی</option><option>بهمن</option><option>اسفند</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+      <button class="btn btn-primary" id="analyzeBtn" onclick="doAnalyze()" disabled>تحلیل کن ←</button>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <div class="card-title">
+          <h2>نمای زنده</h2>
+          <div class="hint" id="incomeLevel">—</div>
+        </div>
+        <div class="live" id="liveBox" style="margin-top:12px"></div>
+      </div>
+
+      <div class="side-box">
+        <h3>چطور بهتر استفاده کنم؟</h3>
+        <p>
+          ۱) با حالت سریع شروع کن. <br>
+          ۲) اگر یک دسته خیلی بالا بود، همان را باز کن و جزئیاتش را وارد کن. <br>
+          ۳) در پایان، قوانین کوچک را انتخاب کن و یک ماه اجرا کن.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result" id="result">
+  <div class="ach-card" id="r-ach" style="display:none"></div>
+  <div class="health-score-card r-card">
+      <div id="r-health"></div>
+    </div>
+
+    <div class="r-grid">
+      <div class="r-card">
+        <h3>🪞 آینه مالی</h3>
+        <p class="mini">یک تصویر ساده از تراز ماهانه شما.</p>
+        <div class="mirror" id="r-mirror"></div>
+
+        <div class="summary" id="r-summ"></div>
+      </div>
+
+      <div class="r-card">
+        <h3>📊 نسبت‌ها و نمودارها</h3>
+        <p class="mini">درصد هر دسته از درآمد (تقریبی).</p>
+        <div class="bars" id="r-bars"></div>
+      </div>
+
+      <div class="r-card peer-card">
+        <div id="r-peer"></div>
+      </div>
+
+      <div class="r-card">
+        <h3>🚨 نشت‌ها</h3>
+        <p class="mini">دسته‌هایی که سهمشان از «نرمال» بیشتر است.</p>
+        <div class="leaks" id="r-leaks"></div>
+      </div>
+
+      <div class="r-card action-card">
+        <div class="action-head">
+          <div class="layer-tag" id="r-act-tag"><div class="layer-tag-num">3</div><span class="layer-tag-txt">برنامه عملی</span></div>
+          <h3 class="action-title" id="r-act-title"></h3>
+          <p class="action-sub">سه گام ساده و قابل اجرا برای یک ماه آینده.</p>
+          <div class="action-savings" id="r-act-savings"></div>
+        </div>
+        <div class="action-body">
+          <div class="a-steps" id="r-act-steps"></div>
+        </div>
+      </div>
+
+      <div class="r-card rules-card" id="r-rules"></div>
+
+      <div class="r-card whatif-card" id="r-whatif"></div>
+
+      <div class="share-bar no-print">
+<button class="share-btn" onclick="copyReport()">📋 کپی گزارش</button><button class="share-btn" onclick="copyShareText()">🟩 اشتراک متنی</button><button class="share-btn" onclick="doPrint()">🖨️ خروجی PDF</button><button class="share-btn" onclick="doReset()">↺ شروع مجدد</button></div><div class="print-only" id="printable"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------------------
+   Expense Leak Analyzer v2
+   Vanilla HTML/CSS/JS
+   --------------------------- */
+
+const CATS=['housing','food','transport','lifestyle','bills','finance'];
+const ALL_CATS=['saving',...CATS];
+
+const FIELD_CAT={
+  rent:'housing',mortgage:'housing',charge:'housing',
+  grocery:'food',restaurant:'food',cafe:'food',delivery:'food',lunch_out:'food',
+  fuel:'transport',taxi:'transport',public:'transport',
+  clothing:'lifestyle',entertain:'lifestyle',small:'lifestyle',
+  utilities:'bills',internet:'bills',subs:'bills',
+  loan:'finance',installment:'finance',credit_inst:'finance',
+}
+
+const FIELD_LABEL={
+  rent:'اجاره',mortgage:'قسط وام مسکن',charge:'شارژ/تعمیرات',
+  grocery:'سوپرمارکت',restaurant:'رستوران',cafe:'کافه',delivery:'سفارش آنلاین',lunch_out:'ناهار بیرون',
+  fuel:'سوخت',taxi:'تاکسی/اینترنتی',public:'حمل‌ونقل عمومی',
+  clothing:'پوشاک',entertain:'تفریح/سرگرمی',small:'خریدهای کوچک',
+  utilities:'قبوض آب/برق/گاز',internet:'اینترنت/موبایل',subs:'اشتراک‌ها',
+  loan:'قسط وام',installment:'اقساط/کارت',credit_inst:'BNPL',
+}
+
+let currentMode='quick';
+
+function fc(n){ // format number with commas
+  return (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+function ft(n){
+  const abs=Math.round(Math.abs(n||0));
+  const m = abs>=1e6 ? (abs/1e6).toFixed(abs%1e6===0?0:1)+' میلیون' : fc(abs);
+  return (n<0?'-':'')+m;
+}
+function pn(v){ // parse numeric
+  if(!v) return 0;
+  return parseInt((v+'').replace(/[^\d]/g,''))||0;
+}
+
+function getInc(){return pn(document.getElementById('income').value)}
+function getAllFields(){
+  const out={};
+  Object.keys(FIELD_CAT).forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const v=pn(el.value);
+    if(v>0) out[id]=v;
+  });
+  return out;
+}
+function getCatVal(cat){
+  // If quick mode, take q_xxx, otherwise sum details
+  if(cat==='saving'){
+    return pn(document.getElementById('saving').value);
+  }
+  if(currentMode==='quick'){
+    const q=document.getElementById('q_'+cat);
+    if(q) return pn(q.value);
+  }
+  // detailed: sum all fields in cat
+  const all=getAllFields();
+  let s=0;
+  Object.keys(all).forEach(id=>{
+    if(FIELD_CAT[id]===cat) s+=all[id];
+  });
+  // if user used quick too, let it act as override when detailed is empty
+  const q=document.getElementById('q_'+cat);
+  const qv=q?pn(q.value):0;
+  if(s===0 && qv>0) s=qv;
+  return s;
+}
+
+function getBM(income){
+  // Benchmarks — simple heuristics, not strict rules.
+  // ideal: [min,max] percentage range (for costs) except saving (reversed)
+  // warn: [soft, hard]
+  const low = income<15000000;
+  const mid = income>=15000000 && income<40000000;
+  const hi  = income>=40000000;
+
+  return{
+    saving:{label:'پس‌انداز',emoji:'💰',ideal:[10,20],warn:[5,3]},
+    housing:{label:'مسکن',emoji:'🏠',ideal: hi?[18,28]:mid?[22,33]:[28,42],warn: hi?[35,42]:mid?[40,48]:[50,60]},
+    food:{label:'خوراک',emoji:'🍽️',ideal: hi?[12,18]:mid?[16,25]:[22,32],warn: hi?[22,26]:mid?[28,34]:[36,45]},
+    transport:{label:'حمل‌ونقل',emoji:'🚗',ideal:[8,14],warn:[18,24]},
+    lifestyle:{label:'سبک زندگی',emoji:'✨',ideal: hi?[14,20]:mid?[10,16]:[8,12],warn: hi?[24,30]:mid?[20,26]:[18,24]},
+    bills:{label:'قبوض',emoji:'🧾',ideal:[5,9],warn:[12,16]},
+    finance:{label:'بدهی‌ها',emoji:'💳',ideal:[0,15],warn:[20,28]},
+  }
+}
+
+// Annual (non-monthly big expenses)
+const ANNUAL_ITEMS=[
+  {id:'annual_insurance',mid:'annual_m_insurance',label:'بیمه',defaultMonth:'اسفند'},
+  {id:'annual_bonus',mid:'annual_m_bonus',label:'عیدی/پاداش',defaultMonth:'اسفند'},
+  {id:'annual_repair',mid:'annual_m_repair',label:'تعمیرات بزرگ',defaultMonth:'مهر'},
+  {id:'annual_tuition',mid:'annual_m_tuition',label:'شهریه/کلاس',defaultMonth:'مهر'},
+  {id:'annual_travel',mid:'annual_m_travel',label:'سفر سالانه',defaultMonth:'شهریور'},
+];
+function getAnnualData(){
+  const items=ANNUAL_ITEMS.map(it=>{
+    const amount=pn(document.getElementById(it.id)?.value);
+    const month=(document.getElementById(it.mid)?.value)||'';
+    return{...it,amount,month};
+  }).filter(x=>x.amount>0);
+  const total=items.reduce((s,x)=>s+x.amount,0);
+  const monthly=Math.round(total/12);
+  const peaks={};
+  items.forEach(x=>{
+    const m=x.month||x.defaultMonth||'';
+    if(!m) return;
+    peaks[m]=(peaks[m]||0)+x.amount;
+  });
+  return{items,total,monthly,peaks}
+}
+function onAnnualField(el){
+  const raw=el.value.replace(/,/g,'');if(!/^\d*$/.test(raw)){el.value=el.value.slice(0,-1);return}
+  const n=parseInt(raw)||0;const pos=el.selectionStart,old=el.value.length;el.value=n?fc(n):'';const d=el.value.length-old;try{el.setSelectionRange(pos+d,pos+d)}catch(e){}
+  updAnnualUi();updLive();checkReady();
+}
+function onAnnualMonth(){updAnnualUi()}
+function updAnnualUi(){
+  const a=getAnnualData();
+  const el=document.getElementById('tot-annual');
+  if(el) el.textContent=a.total? (ft(a.total)+' ثبت‌شده') : '— ثبت‌شده';
+  const acc=document.getElementById('acc-annual');
+  if(acc) acc.classList.toggle('lit',a.total>0);
+  // badge/progress (نمایش تقریبی: سهم از درآمد سالانه تقسیم بر ۱۲)
+  const inc=getInc();
+  const b=document.getElementById('badge-annual');
+  const pf=document.getElementById('prog-annual');
+  if(!inc || !a.monthly){
+    if(b) b.style.display='none';
+    if(pf){pf.style.width='0';pf.style.background='var(--green)'}
+    return;
+  }
+  const p=Math.round((a.monthly/inc)*100);
+  if(b){b.style.display='inline-flex';b.textContent=p+'٪';b.style.color='var(--accent)';b.style.background='var(--s3)'}
+  if(pf){pf.style.width=Math.min(p,100)+'%';pf.style.background='var(--accent)'}
+}
+
+function toggleMode(){
+  currentMode = currentMode==='quick' ? 'detailed' : 'quick';
+  setMode(currentMode);
+}
+function setMode(mode){
+  currentMode=mode;
+  const form=document.getElementById('form');
+  const sw=document.getElementById('modeSw');
+  const lbl=document.getElementById('modeLbl');
+  if(mode==='quick'){
+    form.classList.add('quick-mode');
+    sw.classList.remove('on');
+    lbl.textContent='حالت سریع';
+    // close accordions
+    CATS.forEach(c=>document.getElementById('acc-'+c)?.classList.remove('open'));
+  }else{
+    form.classList.remove('quick-mode');
+    sw.classList.add('on');
+    lbl.textContent='حالت دقیق';
+    // open accordions for better visibility
+    CATS.forEach(c=>document.getElementById('acc-'+c)?.classList.add('open'));
+  }
+  // update totals/progress/badges
+  ALL_CATS.forEach(c=>{updSectionTot(c);updProg(c);updBadge(c)});updAnnualUi();updLive();checkReady()
+}
+function togAcc(cat){
+  if(currentMode==='quick') return;
+  const el=document.getElementById('acc-'+cat);
+  if(!el) return;
+  el.classList.toggle('open');
+}
+
+function onIncome(el){
+  // numeric format
+  const raw=el.value.replace(/,/g,'');
+  if(!/^\d*$/.test(raw)){el.value=el.value.slice(0,-1);return}
+  const n=parseInt(raw)||0;
+  const pos=el.selectionStart,old=el.value.length;
+  el.value=n?fc(n):'';
+  const d=el.value.length-old;
+  try{el.setSelectionRange(pos+d,pos+d)}catch(e){}
+  setIncomeLevel();
+  ALL_CATS.forEach(c=>{updProg(c);updBadge(c)});updAnnualUi();updLive();checkReady();
+}
+
+function onField(el,cat){
+  // format
+  const raw=el.value.replace(/,/g,'');
+  if(!/^\d*$/.test(raw)){el.value=el.value.slice(0,-1);return}
+  const n=parseInt(raw)||0;
+  const pos=el.selectionStart,old=el.value.length;
+  el.value=n?fc(n):'';
+  const d=el.value.length-old;
+  try{el.setSelectionRange(pos+d,pos+d)}catch(e){}
+  // quick mode: update totals from q_ values
+  updSectionTot(cat);
+  updProg(cat);
+  updBadge(cat);
+  updLive();
+  checkReady();
+}
+
+function setIncomeLevel(){
+  const inc=getInc();
+  const el=document.getElementById('incomeLevel');
+  if(!inc){el.textContent='—';return}
+  if(inc<15000000) el.textContent='درآمد پایین';
+  else if(inc<40000000) el.textContent='درآمد متوسط';
+  else el.textContent='درآمد بالا';
+}
+
+function updSectionTot(cat){
+  if(cat==='saving'){return}
+  const v=getCatVal(cat);
+  const t=document.getElementById('tot-'+cat);
+  if(!t) return;
+  t.textContent = v>0 ? (ft(v)+' ماهانه') : '— ثبت نشده';
+  const acc=document.getElementById('acc-'+cat);
+  if(acc) acc.classList.toggle('lit',v>0);
+}
+function updProg(cat){
+  const inc=getInc(); if(!inc) return;
+  if(cat==='saving'){
+    // no progress bar
+    return;
+  }
+  const bm=getBM(inc)[cat]; if(!bm) return;
+  const v=getCatVal(cat);
+  const p=Math.round((v/inc)*100);
+  const fill=document.getElementById('prog-'+cat);
+  if(!fill) return;
+  let col='var(--green)';
+  if(p>bm.warn[1]) col='var(--red)';
+  else if(p>bm.warn[0]) col='var(--orange)';
+  else if(p>bm.ideal[1]) col='var(--accent)';
+  fill.style.background=col;
+  fill.style.width = Math.min(p,100)+'%';
+}
+function updBadge(cat){
+  if(cat==='saving') return;
+  const inc=getInc(); if(!inc) return;
+  const bm=getBM(inc)[cat]; if(!bm) return;
+  const v=getCatVal(cat);
+  const p=Math.round((v/inc)*100);
+  const b=document.getElementById('badge-'+cat);
+  if(!b) return;
+  if(v<=0){b.style.display='none';return}
+  b.style.display='inline-flex';
+  b.textContent=p+'٪';
+  let col='var(--green)',bg='var(--green-l)';
+  if(p>bm.warn[1]){col='var(--red)';bg='var(--red-l)'}
+  else if(p>bm.warn[0]){col='var(--orange)';bg='var(--orange-l)'}
+  else if(p>bm.ideal[1]){col='var(--accent)';bg='var(--accent-ll)'}
+  b.style.color=col;
+  b.style.background=bg;
+}
+
+function updLive(){
+  const inc=getInc();
+  const vals={};
+  CATS.forEach(c=>vals[c]=getCatVal(c));
+  const saving=getCatVal('saving');
+  const tot=CATS.reduce((s,c)=>s+vals[c],0);
+  const rem=inc - tot - saving;
+
+  const rows=[];
+  rows.push({l:'درآمد',v:inc,cls:''});
+  rows.push({l:'پس‌انداز',v:saving,cls:'green'});
+  rows.push({l:'کل هزینه‌ها',v:tot,cls:''});
+  rows.push({l:'تراز ماهانه',v:rem,cls:rem>=0?'green':'red'});
+
+  const box=document.getElementById('liveBox');
+  box.innerHTML = rows.map(r=>`
+    <div class="live-row">
+      <span>${r.l}</span>
+      <span class="v ${r.cls}">${ft(r.v)}</span>
+    </div>
+  `).join('');
+}
+
+function checkReady(){
+  const inc=getInc();
+  document.getElementById('analyzeBtn').disabled = !(inc>0);
+  document.getElementById('s1').classList.toggle('done',inc>0);
+  document.getElementById('s2').classList.toggle('on',inc>0);
+}
+
+// ---------------- Health Score
+function calcHealthScore(inc,vals,savVal){
+  // نمره ۰ تا ۱۰۰ — ترکیب وزن‌دار
+  // ۴۰٪ پس‌انداز | ۳۰٪ بدهی | ۲۰٪ حاشیه امنیت | ۱۰٪ تمرکز/تنوع هزینه‌ها
+  const BM=getBM(inc);
+  const totExp=CATS.reduce((s,c)=>s+(vals[c]||0),0);
+  const remaining=inc - totExp - savVal;
+
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  const pct=(v)=>inc>0?(v/inc):0;
+
+  // 1) Saving ratio (0..100)
+  const savR=pct(savVal);
+  let savScore=0, savLabel='';
+  if(savR>=0.20){savScore=100;savLabel='پس‌انداز عالی (۲۰٪+)'}
+  else if(savR>=0.10){savScore=80;savLabel='پس‌انداز خوب (۱۰–۲۰٪)'}
+  else if(savR>=0.05){savScore=55;savLabel='پس‌انداز متوسط (۵–۱۰٪)'}
+  else {savScore=25;savLabel='پس‌انداز ضعیف (<۵٪)'}
+
+  // 2) Debt burden (finance/income) (0..100)
+  const debtR=pct(vals.finance||0);
+  let debtScore=0, debtLabel='';
+  if(debtR===0){debtScore=100;debtLabel='بدهی صفر'}
+  else if(debtR<0.15){debtScore=80;debtLabel='بدهی پایین (<۱۵٪)'}
+  else if(debtR<=0.25){debtScore=55;debtLabel='بدهی متوسط (۱۵–۲۵٪)'}
+  else {debtScore=25;debtLabel='بدهی بالا (>۲۵٪)'}
+
+  // 3) Safety margin (remaining/income) (0..100)
+  const marR=pct(remaining);
+  let marScore=0, marLabel='';
+  if(marR>=0.10){marScore=100;marLabel='حاشیه امن عالی (۱۰٪+)' }
+  else if(marR>0){marScore=55;marLabel='حاشیه امن کم (۰–۱۰٪)'}
+  else {marScore=15;marLabel='کسری بودجه'}
+
+  // 4) Concentration / deviation (0..100)
+  // + اگر هیچ دسته‌ای بالای ۴۰٪ نباشد
+  // - اگر بیش از ۲ دسته بالای warn[1] باشند
+  let over40=false, severe=0;
+  CATS.forEach(id=>{
+    const p=inc>0?(vals[id]||0)/inc*100:0;
+    const bm=BM[id];
+    if(p>=40) over40=true;
+    if(bm && p>bm.warn[1]) severe++;
+  });
+  let divScore=60, divLabel='ترکیب هزینه‌ها قابل قبول';
+  if(!over40){divScore+=25;divLabel='تمرکز خطرناک ندارید'}
+  if(severe>2){divScore-=35;divLabel='چند نشت همزمان دارید'}
+  divScore=clamp(divScore,0,100);
+
+  const score = Math.round(
+    0.40*savScore +
+    0.30*debtScore +
+    0.20*marScore +
+    0.10*divScore
+  );
+
+  let level,lc;
+  if(score>=85){level='عالی';lc='var(--green)'}
+  else if(score>=70){level='خوب';lc='var(--green)'}
+  else if(score>=50){level='متوسط';lc='var(--accent)'}
+  else if(score>=30){level='ضعیف';lc='var(--orange)'}
+  else {level='بحرانی';lc='var(--red)'}
+
+  const factors=[
+    {label:savLabel,color:savR>=0.10?'var(--green)':savR>=0.05?'var(--accent)':'var(--red)'},
+    {label:debtLabel,color:debtR===0?'var(--green)':debtR<=0.25?'var(--orange)':'var(--red)'},
+    {label:marLabel,color:remaining>=0?'var(--green)':'var(--red)'},
+    {label:divLabel,color:(severe>2||over40)?'var(--orange)':'var(--green)'}
+  ];
+
+  return{score,level,levelColor:lc,factors,details:{savScore,debtScore,marScore,divScore,remaining}}
+}
+
+// ---------------- Peer Comparison
+function buildPeerComparison(inc,vals){
+  // بنچمارک‌های تقریبی بر اساس الگوی هزینه خانوار (۱۴۰۳–۱۴۰۴) — هدف: دید کلی، نه «قضاوت قطعی»
+  // خروجی به‌صورت بازه + میانگین
+  const BM=getBM(inc);
+
+  const br = (inc<20000000)?'lt20':(inc<=40000000)?'20to40':'gt40';
+  const ranges = {
+    lt20:{housing:[38,42],food:[27,32],transport:[10,14],lifestyle:[8,12]},
+    '20to40':{housing:[30,35],food:[20,25],transport:[10,14],lifestyle:[12,16]},
+    gt40:{housing:[22,28],food:[14,18],transport:[10,14],lifestyle:[16,20]}
+  }[br];
+
+  const mk = (a)=>({min:a[0],max:a[1],avg:Math.round((a[0]+a[1])/2)});
+  const bench = {
+    housing: mk(ranges.housing),
+    food: mk(ranges.food),
+    transport: mk(ranges.transport),
+    lifestyle: mk(ranges.lifestyle)
+  };
+
+  const peers=[];
+  ['housing','food','transport','lifestyle'].forEach(id=>{
+    const b=bench[id];
+    const pct=inc>0?Math.round((vals[id]||0)/inc*100):0;
+    const diff=pct-b.avg;
+
+    let st,sc,sb;
+    if(pct>b.max+3){st='بالاتر';sc='var(--red)';sb='var(--red-l)'}
+    else if(pct>b.max){st='کمی بالاتر';sc='var(--orange)';sb='var(--orange-l)'}
+    else if(pct<b.min-3){st='کمتر';sc='var(--green)';sb='var(--green-l)'}
+    else if(pct<b.min){st='کمی کمتر';sc='var(--green)';sb='var(--green-l)'}
+    else {st='مشابه';sc='var(--green)';sb='var(--green-l)'}
+
+    const bm=BM[id];
+    peers.push({
+      emoji: bm.emoji,
+      label: bm.label,
+      desc: `شما ${pct}٪ — میانگین افراد با درآمد مشابه: حدود ${b.avg}٪ (بازه ${b.min}–${b.max}٪)`,
+      status: st,
+      statusColor: sc,
+      statusBg: sb
+    });
+  });
+
+  return peers
+}
+
+// ---------------- Rules
+function generateRules(inc,vals,af){
+  // قوانین کوچک و قابل اجرا — برای آگاهی و کنترل «نشت‌ها»
+  const rules=[];
+  const add=(t)=>{if(t && !rules.includes(t)) rules.push(t)};
+
+  const delivery=af.delivery||0;
+  const cafe=(af.cafe||0);
+  const restaurant=(af.restaurant||0);
+  const clothing=(af.clothing||0);
+
+  if(delivery>inc*0.03){
+    const z=Math.round((delivery/4)*0.65);
+    add(`سقف سفارش آنلاین: ${fc(z)} تومان در هفته (حدود ۳۵٪ کمتر از وضعیت فعلی).`);
+  }
+  if((cafe+restaurant)>inc*0.05){
+    add(`کافه/رستوران: حداکثر ۲ بار در هفته — یک جایگزین کم‌هزینه (خانه/پیک‌نیک/غذای آماده) تعریف کن.`);
+  }
+  if(clothing>inc*0.03){
+    const w=Math.round(clothing*3*0.7);
+    add(`خرید لباس فقط فصلی — سقف هر فصل: ${fc(w)} تومان.`);
+  }
+
+  const sv=getCatVal('saving');
+  if(sv<inc*0.10){
+    add(`اول هر ماه حداقل ${fc(Math.round(inc*0.10))} تومان (۱۰٪) را «قبل از خرج» کنار بگذار.`);
+  }
+  if((vals.finance||0)>inc*0.20){
+    add(`تا سبک شدن بدهی‌ها، خرید اقساطی جدید ممنوع — هر ماه ۱ قلم بدهی را هدف بگیر.`);
+  }
+
+  // قانون عمومی ثابت
+  add(`قبل از خرید بالای ${fc(500000)} تومان، ۴۸ ساعت صبر کن (قانون ضد-هیجانی).`);
+
+  // اگر سبک زندگی خیلی سنگین بود
+  if((vals.lifestyle||0)>inc*0.16){
+    add(`برای سبک زندگی یک «بودجه هفتگی» تعیین کن و فقط همان را خرج کن.`);
+  }
+
+  return rules.slice(0,5)
+}
+
+function buildLayer3(cat,income,values,allFields){
+  const BM=getBM(income),catTotal=values[cat],catPct=Math.round(catTotal/income*100),bm=BM[cat],over=Math.max(0,catTotal-income*bm.ideal[1]/100),overYr=Math.round(over*12);
+  const subs=Object.entries(allFields).filter(([id,])=>FIELD_CAT[id]===cat&&allFields[id]>0).sort((a,b)=>b[1]-a[1]);
+  const top1=subs[0],top2=subs[1];
+
+  if(cat==='housing'){const hasR=(allFields.rent||0)>0,hasM=(allFields.mortgage||0)>0,tA=Math.round(income*bm.ideal[1]/100);return{tag:'مسکن',title:`مسکن ${catPct}٪ درآمد — هدف: زیر ${bm.ideal[1]}٪`,savings:{label:'صرفه‌جویی سالانه',val:overYr},steps:[{title:'واقعیت',body:`مسکن ماهانه <em>${fc(catTotal)}</em> تومان = <em>${catPct}٪</em> درآمد. هدف: <em>${fc(tA)}</em> تومان.`,box:null,time:null},{title:hasM?'قسط وام':(hasR?'کاهش اجاره':'هزینه اصلی'),body:hasM?`قسط <em>${fc(allFields.mortgage)}</em>. بررسی تسویه زودهنگام ارزش دارد.`:(hasR?`اجاره <em>${fc(allFields.rent)}</em>. گزینه ۱۵٪ ارزان‌تر؟`:'بالاترین قلم را بررسی کنید.'),box:over>0?`هر <strong>${fc(Math.round(over))}</strong> صرفه‌جویی ماهانه = <strong>${fc(overYr)}</strong> سالانه.`:null,time:'۱–۳ ماه'},{title:'اگر قابل تغییر نیست',body:'سایر دسته‌ها — <strong>خوراک و سبک زندگی</strong> — را کنترل کنید.',box:null,time:'همین هفته'}]}}
+
+  if(cat==='food'){const dl=allFields.delivery||0,rs=allFields.restaurant||0,cf=allFields.cafe||0,out=dl+rs+cf+(allFields.lunch_out||0),op=income>0?Math.round(out/income*100):0;return{tag:'خوراک',title:`غذای بیرون: ${fc(out)} تومان ماهانه`,savings:{label:'نصف کردن بیرون‌خوری',val:Math.round(out*0.5*12)},steps:[{title:'واقعیت',body:`خوراک <em>${fc(catTotal)}</em> تومان = <em>${catPct}٪</em> درآمد. سهم بیرون‌خوری <em>${op}٪</em>.`,box:null,time:null},{title:'قانون ۲× در هفته',body:`رستوران/کافه/سفارش آنلاین را به ۲ بار در هفته محدود کنید.`,box:out>0?`اگر فقط ۳۰٪ کم کنید، ماهانه <strong>${fc(Math.round(out*0.3))}</strong> ذخیره می‌شود.`:null,time:'همین هفته'},{title:'جایگزین ارزان',body:`۲ گزینه جایگزین تعریف کنید: «غذای خانگی سریع» + «یک وعده آماده کم‌هزینه».`,box:null,time:'۲ هفته'}]}}
+
+  if(cat==='lifestyle'){const sm=allFields.small||0,cl=allFields.clothing||0,en=allFields.entertain||0;return{tag:'سبک زندگی',title:`سبک زندگی ${catPct}٪ درآمد — نرمال ${bm.ideal[0]}–${bm.ideal[1]}٪`,savings:{label:'کاهش ۱۵٪',val:Math.round(catTotal*0.15*12)},steps:[{title:'واقعیت',body:`سبک زندگی <em>${fc(catTotal)}</em> تومان. بزرگ‌ترین قلم: <em>${FIELD_LABEL[top1?.[0]]||''}</em>.`,box:null,time:null},{title:'بودجه هفتگی',body:`یک سقف هفتگی تعیین کنید و فقط همان را خرج کنید.`,box:`اگر ۱۵٪ کم کنید، سالانه <strong>${fc(Math.round(catTotal*0.15*12))}</strong> می‌ماند.`,time:'۱ ماه'},{title:'قانون ۴۸ ساعت',body:`برای خریدهای بزرگ، ۴۸ ساعت صبر کنید و دوباره تصمیم بگیرید.`,box:null,time:'همین امروز'}]}}
+
+  if(cat==='finance'){return{tag:'بدهی',title:`بدهی‌ها ${catPct}٪ درآمد — هدف: زیر ${bm.ideal[1]}٪`,savings:{label:'صرفه‌جویی غیرمستقیم',val:0},steps:[{title:'واقعیت',body:`اقساط/بدهی ماهانه <em>${fc(catTotal)}</em> تومان.`,box:null,time:null},{title:'استراتژی ساده',body:`فعلاً بدهی جدید اضافه نکنید. یک بدهی را هدف بگیرید تا سبک شود.`,box:null,time:'۱–۳ ماه'},{title:'اگر فشار زیاد است',body:`در کنار مذاکره/تجدید، روی کاهش خوراک و سبک زندگی تمرکز کنید.`,box:null,time:'همین هفته'}]}}
+
+  // default
+  return{tag:'هزینه‌ها',title:`کنترل نشت در ${bm.label}`,savings:{label:'',val:0},steps:[{title:'واقعیت',body:`${bm.label} شما ${catPct}٪ درآمد است.`,box:null,time:null},{title:'یک تغییر کوچک',body:`فقط ۱۰٪ کاهش کافیست تا اثرش را ببینید.`,box:null,time:'این هفته'},{title:'تکرار',body:`۴ هفته پیوسته انجام دهید و دوباره اندازه بگیرید.`,box:null,time:'۱ ماه'}]}
+}
+
+function doAnalyze(){
+  const inc=getInc();
+  const BM=getBM(inc);
+  const vals={};CATS.forEach(c=>vals[c]=getCatVal(c));
+  const savingVal=getCatVal('saving');
+  const allFields=getAllFields();
+
+  const totExp=CATS.reduce((s,c)=>s+(vals[c]||0),0);
+  const remaining=inc - totExp - savingVal;
+
+  // Annual planning
+  const annual=getAnnualData(); // total yearly, monthly reserve suggestion
+  const plannedReserve=annual.monthly||0;
+  const adjRemaining=remaining - plannedReserve;
+
+  // ---------------- HEALTH SCORE (با لحاظ کنارگذاری سالانه)
+  const hs=calcHealthScore(inc,vals,savingVal+plannedReserve);
+  const circ=2*Math.PI*68;
+  const target=circ-(circ*hs.score/100);
+  document.getElementById('r-health').innerHTML=
+    `<div class="hs-title">نمره سلامت مالی</div>
+     <div class="hs-circle-wrap">
+       <svg viewBox="0 0 160 160">
+         <circle class="hs-circle-bg" cx="80" cy="80" r="68"/>
+         <circle class="hs-circle-fill" cx="80" cy="80" r="68"
+           style="stroke:${hs.levelColor};stroke-dasharray:${circ};stroke-dashoffset:${circ}" id="hs-fill"/>
+       </svg>
+       <div class="hs-num">
+         <div class="hs-num-val" style="color:${hs.levelColor}" id="hs-val">0</div>
+         <div class="hs-num-label">${hs.level}</div>
+       </div>
+     </div>
+     <div class="hs-desc">
+       ${hs.score>=70?'وضعیت کلی خوب است.':hs.score>=50?'قابل بهبود است.':'نیاز به توجه جدی دارد.'}
+       ${plannedReserve>0?`<br><span style="color:var(--muted)">* نمره با لحاظِ کنارگذاری ماهانه برای هزینه‌های سالانه محاسبه شده.</span>`:''}
+     </div>
+     <div class="hs-factors">${hs.factors.map(f=>`<div class="hs-factor"><div class="hs-factor-dot" style="background:${f.color}"></div>${f.label}</div>`).join('')}</div>`;
+  setTimeout(()=>{
+    const fill=document.getElementById('hs-fill');
+    if(fill) fill.style.strokeDashoffset=target;
+    let cur=0;
+    const iv=setInterval(()=>{
+      cur+=Math.ceil(hs.score/40);
+      if(cur>=hs.score){cur=hs.score;clearInterval(iv)}
+      const v=document.getElementById('hs-val');
+      if(v) v.textContent=cur;
+    },30);
+  },300);
+
+  // ---------------- Achievement (month over month)
+  renderAchievement(inc,vals,savingVal);
+
+  // ---------------- MIRROR
+  let mirrorHtml='';
+  if(remaining<0){
+    mirrorHtml=`درآمد <strong>${ft(inc)}</strong>. هزینه+پس‌انداز <strong>${ft(totExp+savingVal)}</strong> — <strong style="color:var(--red)">${ft(Math.abs(remaining))} کسری</strong>.`;
+  }else{
+    const remPct=inc>0?Math.round((remaining/inc)*100):0;
+    if(remPct<10) mirrorHtml=`درآمد <strong>${ft(inc)}</strong>. فقط <strong style="color:var(--accent)">${remPct}٪ (${ft(remaining)})</strong> بدون تخصیص.`;
+    else mirrorHtml=`درآمد <strong>${ft(inc)}</strong>. پس از همه، <strong style="color:var(--green)">${ft(remaining)} (${remPct}٪)</strong> باقی.`;
+  }
+  if(plannedReserve>0){
+    mirrorHtml+=`<br><span style="color:var(--muted)">اگر برای هزینه‌های سالانه ماهانه <strong>${ft(plannedReserve)}</strong> کنار بگذارید، تراز شما می‌شود <strong style="color:${adjRemaining>=0?'var(--green)':'var(--red)'}">${ft(Math.abs(adjRemaining))} ${adjRemaining>=0?'مازاد':'کسری'}</strong>.</span>`;
+  }
+  document.getElementById('r-mirror').innerHTML=mirrorHtml;
+
+  // ---------------- BARS
+  const allBars=['saving',...CATS];
+  document.getElementById('r-bars').innerHTML=allBars.map(id=>{
+    const v=id==='saving'?savingVal:vals[id];
+    const p=inc>0?Math.round(v/inc*100):0;
+    const bm=BM[id];if(!bm) return '';
+    let col='var(--green)',tagCls='t-ok',tagTxt='نرمال';
+    if(id==='saving'){
+      if(p<bm.warn[1]){col='var(--red)';tagCls='t-max';tagTxt='خیلی کم'}
+      else if(p<bm.ideal[0]){col='var(--orange)';tagCls='t-hi';tagTxt='کم'}
+      else if(p>=bm.ideal[1]){col='var(--green)';tagCls='t-ok';tagTxt='عالی'}
+      else {col='var(--accent)';tagCls='t-mild';tagTxt='قابل بهبود'}
+    }else{
+      if(p>bm.warn[1]){col='var(--red)';tagCls='t-max';tagTxt='بسیار بالا'}
+      else if(p>bm.warn[0]){col='var(--orange)';tagCls='t-hi';tagTxt='بالا'}
+      else if(p>bm.ideal[1]){col='var(--accent)';tagCls='t-mild';tagTxt='کمی بالا'}
+      else if(p===0){col='var(--muted)';tagCls='t-zero';tagTxt='ثبت نشده'}
+    }
+    const idealEnd=Math.min(bm.ideal[1],80);
+    return`<div class="cbar">
+      <div class="cbar-head">
+        <div class="cbar-left">
+          <span class="cbar-name">${bm.emoji} ${bm.label}</span>
+          ${v>0?`<span class="cbar-amt">${ft(v)}</span>`:''}
+        </div>
+        <div class="cbar-right"><span class="ctag ${tagCls}">${tagTxt}</span><span class="cbar-pct" style="color:${col}">${p}٪</span></div>
+      </div>
+      <div class="cbar-track">
+        <div class="cbar-ideal-zone" style="left:0;width:${idealEnd}%"></div>
+        <div class="cbar-ideal-end" style="left:${idealEnd}%"></div>
+        <div class="cbar-fill" style="background:${col}" data-w="${Math.min(p,100)}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ---------------- SUMMARY (با هزینه‌های سالانه)
+  const showBal=(x)=>`<span class="sr-val ${x>=0?'green':'red'}">${ft(Math.abs(x))}</span>`;
+  document.getElementById('r-summ').innerHTML=
+    `<div class="sr"><span class="sr-lbl">کل درآمد</span><span class="sr-val">${ft(inc)}</span></div>
+     <div class="sr"><span class="sr-lbl">پس‌انداز</span><span class="sr-val" style="color:var(--green)">${ft(savingVal)}</span></div>
+     <div class="sr"><span class="sr-lbl">کل هزینه‌ها</span><span class="sr-val">${ft(totExp)}</span></div>
+     ${annual.total>0?`<div class="sr"><span class="sr-lbl">میانگین هزینه‌های سالانه</span><span class="sr-val" style="color:var(--accent)">${ft(plannedReserve)}</span></div>`:''}
+     <div class="sr sr-total"><span class="sr-lbl">${(adjRemaining>=0?'مازاد':'کسری')} (با لحاظ سالانه)</span>${showBal(adjRemaining)}</div>`;
+
+  // ---------------- Annual peak warning
+  const annualNote = buildAnnualNote(annual,inc);
+  if(annualNote){
+    document.getElementById('r-summ').innerHTML += annualNote;
+  }
+
+  // ---------------- PEER COMPARISON
+  const peers=buildPeerComparison(inc,vals);
+  document.getElementById('r-peer').innerHTML=
+    `<div class="peer-title">👥 مقایسه با افراد مشابه</div>`+
+    peers.map(p=>`<div class="peer-row"><div class="peer-emoji">${p.emoji}</div><div class="peer-info"><div class="peer-label">${p.label}</div><div class="peer-desc">${p.desc}</div></div><span class="peer-status" style="color:${p.statusColor};background:${p.statusBg}">${p.status}</span></div>`).join('');
+
+  // ---------------- MULTI-LEAK DETECTION (top 2)
+  const scored=CATS
+    .map(id=>{
+      const p=inc>0?(vals[id]||0)/inc*100:0;
+      return{id,score:p-BM[id].ideal[1],p,val:(vals[id]||0)}
+    })
+    .filter(x=>x.val>0)
+    .sort((a,b)=>b.score-a.score);
+
+  const worst=scored[0];
+  const second=(scored.length>1 && scored[1].score>0)?scored[1]:null;
+
+  let leaksHtml='';
+  if(currentMode==='quick'){
+    leaksHtml+=`<div class="r-card" style="padding:18px 20px;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--muted);line-height:1.9">
+        ⚡ شما در <strong>حالت سریع</strong> هستید. 
+        <span style="color:var(--text)">می‌خوای دقیق‌تر بررسی کنیم؟</span>
+        دسته‌هایی که عدد بالایی دارن رو باز کن و جزئیات رو وارد کن.
+      </div>
+    </div>`;
+  }
+
+  if(worst){
+    const lb=BM[worst.id];
+    const lp=Math.round(worst.p);
+    const over=Math.max(0,worst.val - inc*lb.ideal[1]/100);
+    const subItems=Object.entries(allFields)
+      .filter(([id,v])=>FIELD_CAT[id]===worst.id && v>0)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,4);
+
+    leaksHtml+=`<div class="leak-card"><div class="leak-inner">
+      <div class="leak-cat">🔴 نشت اصلی</div>
+      <div class="leak-name">${lb.emoji} ${lb.label}</div>
+      <div class="leak-sub">${lp>lb.ideal[1]?`${lp}٪ درآمد — نرمال ${lb.ideal[0]}–${lb.ideal[1]}٪.`+(over>0?` ماهانه ${ft(over)} اضافه.`:''):'الگوی نسبتاً متوازن.'}</div>
+      <div class="leak-stats">
+        <div class="ls"><div class="ls-l">سهم از درآمد</div><div class="ls-v" style="color:var(--red)">${lp}٪</div></div>
+        <div class="ls"><div class="ls-l">بازه نرمال</div><div class="ls-v" style="color:var(--green)">${lb.ideal[0]}–${lb.ideal[1]}٪</div></div>
+        <div class="ls"><div class="ls-l">مبلغ ماهانه</div><div class="ls-v">${ft(worst.val)}</div></div>
+        ${over>0?`<div class="ls"><div class="ls-l">هزینه اضافه</div><div class="ls-v" style="color:var(--orange)">${ft(over)}</div></div>`:''}
+      </div>
+      ${subItems.length>1?`<div class="top-items"><div class="top-items-ttl">بزرگ‌ترین قلم‌ها</div>
+        ${subItems.map(([id,v])=>{
+          const pct=worst.val>0?Math.round(v/worst.val*100):0;
+          return`<div class="top-item"><span class="top-item-name">● ${FIELD_LABEL[id]||id}</span><div style="display:flex;align-items:center;gap:8px"><span class="top-item-val">${ft(v)}</span><span class="top-item-pct">${pct}٪</span></div></div>`;
+        }).join('')}
+      </div>`:''}
+    </div></div>`;
+  }
+
+  if(second){
+    const lb2=BM[second.id],lp2=Math.round(second.p);
+    leaksHtml+=`<div class="leak-card secondary"><div class="leak-inner">
+      <div class="leak-cat">🟠 نشت دوم</div>
+      <div class="leak-name">${lb2.emoji} ${lb2.label}</div>
+      <div class="leak-sub">${lp2}٪ درآمد — نرمال ${lb2.ideal[0]}–${lb2.ideal[1]}٪.</div>
+      <div class="leak-stats">
+        <div class="ls"><div class="ls-l">سهم</div><div class="ls-v" style="color:var(--orange)">${lp2}٪</div></div>
+        <div class="ls"><div class="ls-l">نرمال</div><div class="ls-v" style="color:var(--green)">${lb2.ideal[0]}–${lb2.ideal[1]}٪</div></div>
+        <div class="ls"><div class="ls-l">ماهانه</div><div class="ls-v">${ft(second.val)}</div></div>
+      </div>
+    </div></div>`;
+  }
+  document.getElementById('r-leaks').innerHTML=leaksHtml;
+
+  // ---------------- LAYER 3: ACTION
+  const worstKey=worst?worst.id:CATS[0];
+  const l3=buildLayer3(worstKey,inc,vals,allFields);
+  document.getElementById('r-act-tag').textContent='برنامه عملی — '+l3.tag;
+  document.getElementById('r-act-title').textContent=l3.title;
+  document.getElementById('r-act-savings').innerHTML=l3.savings.val>0?
+    `<div class="as-l">${l3.savings.label}</div><div class="as-v">${ft(l3.savings.val)}</div><div class="as-s">در ۱۲ ماه</div>`:'';
+  document.getElementById('r-act-steps').innerHTML=l3.steps.map((s,i)=>`
+    <div class="a-step">
+      <div class="a-step-line"></div>
+      <div class="a-step-left"><div class="a-num">${i+1}</div></div>
+      <div class="a-content">
+        <div class="a-ttl">${s.title}</div>
+        <div class="a-body">${s.body}</div>
+        ${s.box?`<div class="a-box">${s.box}</div>`:''}
+        ${s.time?`<div class="a-time"><div class="a-time-dot"></div>${s.time}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  // ---------------- PERSONAL RULES (کارت + کپی)
+  const rules=generateRules(inc,vals,allFields);
+  window._rules=rules.slice();
+  document.getElementById('r-rules').innerHTML=
+    `<div class="rules-title">📌 قوانین شخصی شما</div>`+
+    rules.map((r,i)=>`
+      <div class="rule-item">
+        <div class="rule-num">${i+1}</div>
+        <div class="rule-main">${escapeHtml(r)}</div>
+        <button class="rule-copy" onclick="copyRule(${i}, this);event.stopPropagation()">کپی</button>
+      </div>`).join('');
+
+  // ---------------- WHAT-IF SIMULATOR (top 4)
+  window._whatifData={inc,vals,savingVal,plannedReserve,totExp};
+  const topCats=scored.slice(0,4).filter(x=>x.val>0);
+
+  document.getElementById('r-whatif').innerHTML=
+    `<div class="whatif-title">🔮 شبیه‌ساز «اگر...»</div>`+
+    topCats.map(c=>{
+      const bm=BM[c.id];
+      return `<div class="whatif-row">
+        <div class="whatif-label">${bm.emoji} ${bm.label}</div>
+        <div class="whatif-slider-wrap">
+          <input type="range" class="whatif-slider" min="0" max="50" value="0" oninput="updWhatIf()" data-cat="${c.id}" data-base="${c.val}">
+          <span class="whatif-val" id="wv-${c.id}">۰٪ کاهش</span>
+        </div>
+      </div>`;
+    }).join('')+
+    `<div class="whatif-result" id="whatif-result">
+      <div class="whatif-result-item"><div class="whatif-result-label">صرفه‌جویی ماهانه</div><div class="whatif-result-val" id="wf-mo">—</div></div>
+      <div class="whatif-result-item"><div class="whatif-result-label">صرفه‌جویی سالانه</div><div class="whatif-result-val" id="wf-yr">—</div></div>
+      <div class="whatif-result-item"><div class="whatif-result-label">نمره جدید</div><div class="whatif-result-val" id="wf-sc">—</div></div>
+      <div class="whatif-result-item"><div class="whatif-result-label">پیام</div><div class="whatif-result-val" id="wf-msg" style="font-size:12px;font-weight:700">—</div></div>
+    </div>`;
+
+  // ---------------- Persist snapshot (for returning users)
+  saveSnapshot(inc,vals,savingVal);
+
+  // ---------------- SHOW RESULT
+  document.getElementById('form').style.display='none';
+  document.getElementById('result').style.display='block';
+  document.getElementById('s2').classList.add('done');document.getElementById('s2').classList.remove('on');
+  document.getElementById('s3').classList.add('on');
+  setTimeout(()=>{document.querySelectorAll('.cbar-fill').forEach(el=>el.style.width=el.dataset.w+'%')},150);
+
+  // Build printable block
+  buildPrintableSummary();
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updWhatIf(){
+  const d=window._whatifData;if(!d)return;
+  let totalSaved=0;
+  const newVals={...d.vals};
+
+  document.querySelectorAll('.whatif-slider').forEach(sl=>{
+    const cat=sl.dataset.cat;
+    const base=parseInt(sl.dataset.base)||0;
+    const pct=parseInt(sl.value)||0;
+    const saved=Math.round(base*pct/100);
+    totalSaved+=saved;
+    newVals[cat]=base-saved;
+
+    const wv=document.getElementById('wv-'+cat);
+    if(wv) wv.textContent = pct>0 ? `${pct}٪ کاهش = ${fc(saved)}` : '۰٪ کاهش';
+  });
+
+  const mo=document.getElementById('wf-mo');
+  const yr=document.getElementById('wf-yr');
+  const sc=document.getElementById('wf-sc');
+  const msg=document.getElementById('wf-msg');
+
+  if(mo) mo.textContent = totalSaved>0?ft(totalSaved):'—';
+  if(yr) yr.textContent = totalSaved>0?ft(totalSaved*12):'—';
+
+  if(totalSaved>0){
+    const ns=calcHealthScore(d.inc,newVals,d.savingVal + d.plannedReserve + totalSaved);
+    if(sc){sc.textContent=ns.score;sc.style.color=ns.levelColor}
+    if(msg){
+      msg.style.color='var(--green)';
+      msg.textContent=`با این تغییر، حدود ${ft(totalSaved*12)} در سال بیشتر می‌مونه`;
+    }
+  }else{
+    if(sc){sc.textContent='—';sc.style.color='var(--blue)'}
+    if(msg){msg.textContent='—';msg.style.color='var(--blue)'}
+  }
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+function copyRule(i,btn){
+  const r=(window._rules||[])[i];
+  if(!r) return;
+  navigator.clipboard.writeText(r).then(()=>{
+    if(btn){
+      btn.classList.add('rule-copied');
+      btn.textContent='کپی شد';
+      setTimeout(()=>{btn.classList.remove('rule-copied');btn.textContent='کپی'},1200);
+    }
+  });
+}
+
+function copyShareText(){
+  // خلاصه ساده برای پیام‌رسان‌ها
+  const hs=document.getElementById('hs-val')?.textContent||'—';
+  const level=document.querySelector('.hs-num-label')?.textContent||'';
+  const mirror=document.getElementById('r-mirror')?.innerText||'';
+  const leaks=[...document.querySelectorAll('#r-leaks .leak-name')].slice(0,2).map(x=>x.innerText.trim());
+  const rules=(window._rules||[]).slice(0,3);
+
+  const txt=[
+    '📌 خلاصه نشت‌یاب مالی (تخمینی)',
+    `🧭 نمره سلامت: ${hs}/100 (${level})`,
+    `🪞 آینه: ${mirror.replace(/\s+/g,' ').trim()}`,
+    leaks.length?`🚨 نشت‌های اصلی: ${leaks.join(' ، ')}`:'',
+    rules.length?'✅ قوانین پیشنهادی:':'',
+    ...rules.map(r=>'• '+r),
+    '—',
+    'تخمینو: ابزارهای شفاف‌سازی تصمیم مالی (نه پیش‌بینی قطعی)'
+  ].filter(Boolean).join('\n');
+
+  navigator.clipboard.writeText(txt).then(()=>alert('متن اشتراک‌گذاری کپی شد ✅'));
+}
+
+function doPrint(){
+  window.print();
+}
+
+function buildAnnualNote(annual,inc){
+  if(!annual || !annual.total) return '';
+  // پیدا کردن ۱-۲ ماه پیک
+  const entries=Object.entries(annual.peaks||{}).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return '';
+  const top=entries.slice(0,2);
+  const peakAmt=top.reduce((s,[,v])=>s+v,0);
+  const peakPct=inc>0?Math.round((peakAmt/12)/inc*100):0;
+  const months=top.map(([m,])=>m).join(' و ');
+  return `<div class="sr" style="margin-top:8px">
+    <span class="sr-lbl">هشدار ماه‌های پیک</span>
+    <span class="sr-val" style="color:var(--orange)">${months}: حدود ${ft(peakAmt)}</span>
+  </div>`;
+}
+
+/* ---------- Returning user snapshots ---------- */
+const SNAP_KEY='ela_snapshots_v1';
+function ym(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function getSnapshots(){
+  try{
+    const j=localStorage.getItem(SNAP_KEY);
+    return j?JSON.parse(j):[];
+  }catch(e){return []}
+}
+function saveSnapshot(inc,vals,savingVal){
+  try{
+    const now=new Date();
+    const key=ym(now);
+    const snaps=getSnapshots().filter(s=>s && s.key!==key).slice(-11); // keep last 12
+    snaps.push({key,ts:now.toISOString(),inc,vals,savingVal});
+    localStorage.setItem(SNAP_KEY,JSON.stringify(snaps));
+  }catch(e){}
+}
+function findPrevSnapshot(){
+  const snaps=getSnapshots();
+  if(!snaps.length) return null;
+  const now=new Date();
+  const prev=new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const key=ym(prev);
+  return snaps.slice().reverse().find(s=>s.key===key) || null;
+}
+function renderAchievement(inc,vals,savingVal){
+  const prev=findPrevSnapshot();
+  const box=document.getElementById('r-ach');
+  if(!box) return;
+
+  if(!prev){
+    box.style.display='none';
+    return;
+  }
+
+  const foodNow=vals.food||0, foodPrev=prev.vals?.food||0;
+  const savNow=savingVal, savPrev=prev.savingVal||0;
+
+  const foodDiffPct = foodPrev>0 ? Math.round(((foodNow-foodPrev)/foodPrev)*100) : null;
+  const savDiff = savNow - savPrev;
+
+  let rows='';
+  if(foodDiffPct!==null){
+    rows += `<div class="ach-row"><span>خوراک نسبت به ماه قبل</span><span class="ach-val" style="color:${foodDiffPct<=-1?'var(--green)':foodDiffPct>=1?'var(--red)':'var(--muted)'}">${foodDiffPct>0?'+':''}${foodDiffPct}٪</span></div>`;
+  }
+  rows += `<div class="ach-row"><span>پس‌انداز نسبت به ماه قبل</span><span class="ach-val" style="color:${savDiff>=0?'var(--green)':'var(--red)'}">${savDiff>=0?'+':''}${ft(Math.abs(savDiff))}</span></div>`;
+
+  box.innerHTML = `<div class="ach-title">🏁 دستاورد (مقایسه با ماه قبل)</div>` + rows;
+  box.style.display='block';
+}
+
+/* ---------- Printable summary ---------- */
+function buildPrintableSummary(){
+  const hs=document.getElementById('hs-val')?.textContent||'—';
+  const level=document.querySelector('.hs-num-label')?.textContent||'';
+  const mirror=document.getElementById('r-mirror')?.innerText||'';
+  const leaks=[...document.querySelectorAll('#r-leaks .leak-name')].slice(0,2).map(x=>x.innerText.trim());
+  const rules=(window._rules||[]).slice(0,4);
+
+  const annual=getAnnualData();
+  const annualLine = annual.total?`• کنارگذاری پیشنهادی برای هزینه‌های سالانه: ${ft(Math.round(annual.total/12))} در ماه`:'';
+
+  const html = `
+    <div class="r-card" style="margin:0;border-radius:0">
+      <div class="layer-tag"><div class="layer-tag-num">PDF</div><span class="layer-tag-txt">خلاصه قابل چاپ</span></div>
+      <div style="font-size:18px;font-weight:900;margin-bottom:6px">نشت‌یاب مالی — گزارش تخمینی</div>
+      <div style="color:var(--muted);font-size:12px;line-height:1.9;margin-bottom:10px">این گزارش برای شفاف‌سازی الگوهاست؛ نه پیش‌بینی قطعی.</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="ls" style="min-width:150px"><div class="ls-l">نمره سلامت</div><div class="ls-v">${hs}/100 (${level})</div></div>
+        <div class="ls" style="flex:2;min-width:220px"><div class="ls-l">آینه</div><div class="ls-v" style="font-size:13px;line-height:1.8">${escapeHtml(mirror)}</div></div>
+      </div>
+      ${leaks.length?`<div style="font-size:12px;margin-bottom:10px"><strong>نشت‌های اصلی:</strong> ${escapeHtml(leaks.join(' ، '))}</div>`:''}
+      ${annualLine?`<div style="font-size:12px;margin-bottom:10px">${annualLine}</div>`:''}
+      ${rules.length?`<div style="font-size:12px"><strong>قوانین پیشنهادی:</strong><br>${rules.map(r=>'• '+escapeHtml(r)).join('<br>')}</div>`:''}
+    </div>
+  `;
+  const p=document.getElementById('printable');
+  if(p) p.innerHTML = html;
+}
+
+function copyReport(){
+  const inc=getInc();
+  const vals={};CATS.forEach(c=>vals[c]=getCatVal(c));
+  const sv=getCatVal('saving');
+  const tot=CATS.reduce((s,c)=>s+(vals[c]||0),0);
+  const annual=getAnnualData();
+  const planned=Math.round((annual.total||0)/12);
+  const rem=inc - tot - sv - planned;
+
+  const hs=calcHealthScore(inc,vals,sv+planned);
+
+  const BM=getBM(inc);
+  const scored=CATS
+    .map(id=>{
+      const p=inc>0?(vals[id]||0)/inc*100:0;
+      return{id,score:p-BM[id].ideal[1],p,val:(vals[id]||0)}
+    })
+    .filter(x=>x.val>0)
+    .sort((a,b)=>b.score-a.score);
+
+  const leaks=scored.slice(0,2).map(x=>`${BM[x.id].label} (${Math.round(x.p)}٪)`).join('، ')||'—';
+  const rules=(window._rules||[]).slice(0,5);
+
+  const txt=[
+    'نشت‌یاب مالی — گزارش تخمینی',
+    `درآمد: ${ft(inc)}`,
+    `پس‌انداز: ${ft(sv)}`,
+    `کل هزینه‌ها: ${ft(tot)}`,
+    annual.total?`هزینه‌های سالانه (میانگین ماهانه): ${ft(planned)}`:'',
+    `تراز (با لحاظ سالانه): ${ft(Math.abs(rem))} ${rem>=0?'مازاد':'کسری'}`,
+    `نمره سلامت مالی: ${hs.score}/100 (${hs.level})`,
+    `نشت‌های اصلی: ${leaks}`,
+    rules.length?'قوانین شخصی:':'',
+    ...rules.map(r=>'• '+r),
+    '',
+    'این خروجی برای شفاف‌سازی الگوهاست؛ نه پیش‌بینی قطعی.'
+  ].filter(Boolean).join('\n');
+
+  navigator.clipboard.writeText(txt).then(()=>alert('گزارش کپی شد ✅'));
+}
+
+function doReset(){
+  document.querySelectorAll('input').forEach(i=>i.value='');
+  document.querySelectorAll('.acc').forEach(a=>a.classList.remove('open','lit'));
+  setMode('quick');
+  document.getElementById('form').style.display='grid';
+  document.getElementById('result').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Init
+document.getElementById('form').classList.add('quick-mode');
+ANNUAL_ITEMS.forEach(it=>{const sel=document.getElementById(it.mid);if(sel && !sel.value){/* keep blank by default */}});
+updAnnualUi();
+</script>
+</body>
+</html>
