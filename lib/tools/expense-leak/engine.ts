@@ -578,6 +578,174 @@ function buildPeers(
   return items;
 }
 
+function build5030(
+  summary: ExpenseLeakOutputSummary,
+  totals: Record<ExpenseLeakCategoryId, number>,
+) {
+  const income = summary.income || 0;
+  if (!income) return undefined;
+
+  const needsAmount =
+    totals.housing + totals.food + totals.transport + totals.health + totals.bills;
+  const wantsAmount = totals.lifestyle;
+  const savingAmount = totals.saving;
+
+  const needsPct = safePercent(needsAmount, income);
+  const wantsPct = safePercent(wantsAmount, income);
+  const savingPct = safePercent(savingAmount, income);
+
+  const slices = [
+    {
+      label: 'نیازها (مسکن، خوراک، حمل‌ونقل، سلامت، قبوض)',
+      targetPercent: 50,
+      actualPercent: needsPct,
+      gapPercent: needsPct - 50,
+    },
+    {
+      label: 'خواسته‌ها (سبک زندگی و خرج‌های انعطاف‌پذیر)',
+      targetPercent: 30,
+      actualPercent: wantsPct,
+      gapPercent: wantsPct - 30,
+    },
+    {
+      label: 'پس‌انداز و سرمایه‌گذاری',
+      targetPercent: 20,
+      actualPercent: savingPct,
+      gapPercent: savingPct - 20,
+    },
+  ];
+
+  let note = 'این تقسیم‌بندی بر اساس قاعده ۵۰/۳۰/۲۰ است و برای همه درآمدها نسخه قطعی محسوب نمی‌شود.';
+  if (needsPct > 60) {
+    note =
+      'هزینه‌های ضروری (نیازها) سهم بالایی از بودجه را گرفته‌اند؛ اگر امکان‌پذیر است، در افق میان‌مدت روی کاهش اجاره، قبوض یا هزینه‌های سلامت مذاکره/بهینه‌سازی کنید.';
+  } else if (wantsPct > 35) {
+    note =
+      'هزینه‌های «خواسته‌ها» بالاتر از محدوده پیشنهادی است؛ اگر هدف پس‌انداز دارید، از اینجا می‌توانید شروع کنید.';
+  } else if (savingPct >= 20) {
+    note = 'الگوی شما از نظر پس‌انداز نزدیک یا بهتر از قاعده ۵۰/۳۰/۲۰ است؛ می‌توانید روی بهینه‌سازی جزئی تمرکز کنید.';
+  }
+
+  return {
+    slices,
+    note,
+  };
+}
+
+function buildFragilityDetails(
+  summary: ExpenseLeakOutputSummary,
+  totals: Record<ExpenseLeakCategoryId, number>,
+) {
+  const income = summary.income || 0;
+  if (!income) return undefined;
+
+  const fixedApprox = totals.housing + totals.bills + totals.finance;
+  const fixedPct = safePercent(fixedApprox, income);
+  const ratio = fixedApprox / income;
+
+  let level: 'low' | 'medium' | 'high' | 'critical';
+  let label: string;
+
+  if (ratio < 0.3) {
+    level = 'low';
+    label = 'شکنندگی پایین — بخش کوچکی از درآمد به هزینه‌های ثابت قفل شده است.';
+  } else if (ratio < 0.5) {
+    level = 'medium';
+    label = 'شکنندگی متوسط — حدود یک‌سوم تا نیمی از بودجه به هزینه‌های ثابت اختصاص دارد.';
+  } else if (ratio < 0.7) {
+    level = 'high';
+    label = 'شکنندگی بالا — بخش زیادی از درآمد هر ماه تکرار می‌شود؛ ضربه‌های کوچک می‌توانند بودجه را تحت فشار بگذارند.';
+  } else {
+    level = 'critical';
+    label = 'شکنندگی بحرانی — تقریباً تمام بودجه با هزینه‌های ثابت پر شده است؛ هر شوک مالی می‌تواند کسری جدی ایجاد کند.';
+  }
+
+  return {
+    fixedExpensePercent: fixedPct,
+    ratio,
+    level,
+    label,
+  };
+}
+
+function buildDarkMoney(summary: ExpenseLeakOutputSummary, categories: ExpenseLeakCategoryBreakdown[]) {
+  const income = summary.income || 0;
+  if (!income) return undefined;
+
+  const flexibleCats: ExpenseLeakCategoryId[] = ['lifestyle', 'food', 'transport'];
+  const flexibleTotal = categories
+    .filter((c) => flexibleCats.includes(c.id))
+    .reduce((s, c) => s + c.amount, 0);
+
+  const darkAmount = Math.max(0, flexibleTotal - income * 0.15);
+  const percentOfIncome = safePercent(darkAmount, income);
+
+  if (!darkAmount || percentOfIncome < 3) {
+    return {
+      darkAmount: 0,
+      percentOfIncome: 0,
+      label: 'در حال حاضر الگوی خرج‌کردن انعطاف‌پذیر، نشانه نشت بزرگ و پنهان ندارد.',
+      note: undefined,
+    };
+  }
+
+  const label =
+    '«پول تاریک» مجموعه هزینه‌های انعطاف‌پذیر (خوراک بیرون، سبک زندگی، رفت‌وآمد) است که بالاتر از یک آستانه ساده در نظر گرفته شده است.';
+  const note =
+    'این عدد پیش‌بینی آینده نیست؛ فقط نشان می‌دهد اگر بخواهید در کوتاه‌مدت فضا باز کنید، کجا بیشترین ظرفیت کاهش داوطلبانه هزینه را دارید.';
+
+  return {
+    darkAmount,
+    percentOfIncome,
+    label,
+    note,
+  };
+}
+
+const PERSIAN_MONTHS = [
+  'فروردین',
+  'اردیبهشت',
+  'خرداد',
+  'تیر',
+  'مرداد',
+  'شهریور',
+  'مهر',
+  'آبان',
+  'آذر',
+  'دی',
+  'بهمن',
+  'اسفند',
+] as const;
+
+function buildHeatmap(input: ExpenseLeakInput, summary: ExpenseLeakOutputSummary) {
+  const totalAnnual = summary.totalAnnualAmount;
+
+  const byMonth = new Map<string, number>();
+  for (const item of input.annualItems ?? []) {
+    const key = item.monthName || 'نامشخص';
+    byMonth.set(key, (byMonth.get(key) ?? 0) + item.amount);
+  }
+
+  const months = PERSIAN_MONTHS.map((m) => {
+    const amount = byMonth.get(m) ?? 0;
+    return {
+      monthLabel: m,
+      amount,
+      percentOfAnnual: totalAnnual ? safePercent(amount, totalAnnual) : 0,
+    };
+  });
+
+  const peak = months.reduce(
+    (best, cur) => (cur.amount > best.amount ? cur : best),
+    { monthLabel: '', amount: 0, percentOfAnnual: 0 },
+  );
+
+  return {
+    months,
+    peakMonthLabel: peak.amount > 0 ? peak.monthLabel : undefined,
+  };
+}
+
 export function analyseExpenseLeak(inputRaw: ExpenseLeakInput): ExpenseLeakOutput {
   const input = normaliseInput(inputRaw);
   const totals = computeCategoryTotals(input);
@@ -586,6 +754,10 @@ export function analyseExpenseLeak(inputRaw: ExpenseLeakInput): ExpenseLeakOutpu
   const categories = buildCategories(summary.income, totals);
   const leaks = buildLeaks(summary.income, categories);
   const peers = buildPeers(summary.income, categories, input.profile);
+  const rule5030 = build5030(summary, totals);
+  const fragility = buildFragilityDetails(summary, totals);
+  const darkMoney = buildDarkMoney(summary, categories);
+  const heatmap = buildHeatmap(input, summary);
 
   return {
     input,
@@ -594,6 +766,10 @@ export function analyseExpenseLeak(inputRaw: ExpenseLeakInput): ExpenseLeakOutpu
     categories,
     leaks,
     peers,
+    rule5030,
+    fragility,
+    darkMoney,
+    heatmap,
   };
 }
 
