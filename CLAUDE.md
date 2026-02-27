@@ -1,4 +1,17 @@
+---
+description: 
+alwaysApply: true
+---
+
+# System Role
+
+This document defines the architectural ground truth of Takhmino.
+All agents must treat this as authoritative project context.
+No structural changes may violate these contracts.
+If modification is needed, proposal and approval are required.
+
 # تخمینو — راهنمای Claude Code
+
 
 این فایل توسط Claude Code خوانده می‌شود تا context پروژه در هر session حفظ شود.
 
@@ -15,8 +28,8 @@
 ---
 
 ## Route Groups
-- `app/(dark)/` — صفحات با تم تیره: login، register، dashboard، forgot-password، reset-password
-- `app/(light)/` — صفحات با تم روشن: صفحه اصلی، ابزارها، آکادمی
+- `app/(public)/` — صفحات عمومی با UI روشن: صفحه اصلی، ابزارها، آکادمی
+- `app/(auth)/` — صفحات احراز هویت و داشبورد (محافظت‌شده): login/register/dashboard/forgot/reset
 - `app/_shell/` — AppShell + PublicHeader + PublicFooter + AuthModal
 
 ---
@@ -70,9 +83,9 @@
 
 ## Locked Contracts (بدون ثبت در PROJECT_LOCKS.md تغییر نده)
 - Cookie name: `takhmino_auth`
-- Route groups: `(light)` و `(dark)` باید بمانند
+- Route groups: `(public)` و `(auth)` و `_shell` باید بمانند
 - API routes: `/api/auth/*` و `/api/tool-runs` قراردادهای پایدار
-- Middleware: verify JWT → set x-auth-user header روی همه روت‌ها
+- Middleware: verify JWT → set `x-auth-user` header روی همه روت‌ها
 
 ---
 

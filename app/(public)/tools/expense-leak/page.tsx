@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { TrendingDown, Landmark, BookOpen } from 'lucide-react';
 import ToolShell from '@/components/tools/ToolShell';
 import { toolConfig } from './tool.config';
-import ExpenseLeakFrame from './ExpenseLeakFrame';
+import ExpenseLeakClient from './ExpenseLeakClient';
 
 export const metadata: Metadata = {
   title: toolConfig.seo.title,
@@ -104,7 +104,7 @@ export default function Page() {
       faqItems={faqItems}
       relatedTools={relatedTools}
     >
-      <ExpenseLeakFrame />
+      <ExpenseLeakClient />
     </ToolShell>
   );
 }
