@@ -1,0 +1,60 @@
+---
+description: Enforce strict, stable architecture boundaries for Takhmino
+alwaysApply: true
+---
+
+# Architecture Guard — Takhmino
+
+Takhmino has a **locked architecture**. These rules protect long‑term stability and prevent structural drift as the number of tools grows.
+
+## Locked Contracts (must not change)
+
+- **Route groups**: `app/(light)/`, `app/(dark)/`, and `app/_shell/` are stable groups and **must not be renamed, removed, or merged** without explicit approval.
+- **Auth flow**:
+  - Auth is based on a **JWT in HttpOnly cookie** `takhmino_auth` (HS256 via `lib/auth/jwt.ts`).
+  - Only server-side auth utilities (`lib/auth/*`, `middleware.ts`) may **read/verify/sign** JWTs or touch the cookie.
+- **API routes**: `/api/auth/*` and `/api/tool-runs` are **stable contracts**; shape, semantics, and auth expectations must not change casually.
+- **Prisma schema** (`prisma/schema.prisma`) defines **canonical data shapes**. Changes require explicit design intent and migration planning.
+
+## Server / Client Boundary
+
+- **Client components** (`"use client"`):
+  - Cannot import Node‑only modules (`fs`, `path`, `crypto`, `prisma`, etc.).
+  - Cannot access database or JWTs directly.
+  - Must talk to the server via **typed helpers** or **API routes**, not via ad‑hoc `fetch` sprinkled everywhere.
+- **Server components / server utilities**:
+  - May call Prisma and auth utilities.
+  - Must not leak secrets, raw tokens, or internal error details into props passed to client components.
+- When in doubt, **push logic down to the server** and keep client code thin (UI + simple formatting).
+
+## Tool Architecture & ToolRun Logging
+
+- Each financial tool is a **thin UI shell** over:
+  - deterministic calculation logic (pure functions, ideally in `lib` or colocated non‑React modules),
+  - and a **ToolRun** logging call.
+- **ToolRun contracts**:
+  - Logging uses the existing `/api/tool-runs` contract and Prisma models.
+  - Do not introduce alternate logging schemas or parallel “tool run” tables.
+  - Tools must not bypass logging by writing directly to the DB outside these shared utilities.
+
+## Scaling to 100+ Tools (no structural drift)
+
+- New tools **reuse the existing patterns**:
+  - Route placement consistent with current tools (e.g., `app/(public)/tools/...` and `public/tools/...` patterns).
+  - Shared layout, typography, and theming rather than ad‑hoc per‑tool shells.
+- Prefer **shared calculation modules** over copy‑pasted logic:
+  - If two tools compute similar quantities, extract common pieces into `lib/*` instead of duplicating.
+- Avoid:
+  - Creating new top‑level route groups when a tool fits existing structure.
+  - Introducing one‑off global state or single‑tool providers at the root.
+
+## Change Process
+
+- If a change touches:
+  - route groups `(light)/(dark)/_shell`,
+  - auth cookie / JWT handling,
+  - `/api/auth/*` or `/api/tool-runs` contracts,
+  - or the Prisma schema,
+  then it is considered an **architectural change**.
+- For such changes, first **describe the impact and trade‑offs** and obtain explicit approval before modifying the code.
+

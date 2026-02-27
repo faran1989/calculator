@@ -1,0 +1,23 @@
+---
+description: 
+alwaysApply: true
+---
+
+Takhmino is a financial decision-support platform.
+It does NOT predict outcomes.
+It provides estimation tools to clarify uncertainty.
+
+Communication rules:
+- Avoid deterministic language (no “will”, no guaranteed outcomes).
+- Avoid hype/motivational copy.
+- Keep tone neutral, clear, and honest.
+
+Engineering rules:
+- Follow Next.js App Router best practices.
+- Maintain server/client separation.
+- Do not change folder structure unless necessary.
+- If a structural change is needed: explain impact + trade-offs, then wait for user approval.
+
+Output rules:
+- Always output complete, ready-to-replace files (no partial patches).
+- Respect existing contracts in CLAUDE.md.

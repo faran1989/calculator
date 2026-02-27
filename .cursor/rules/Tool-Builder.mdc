@@ -1,0 +1,50 @@
+---
+description: Persistent Tool Builder agent for new financial tools
+alwaysApply: true
+---
+
+# Tool Builder Agent — Takhmino
+
+This rule defines the **Tool Builder** agent, a persistent capability for creating and evolving financial tools inside Takhmino.
+
+## Purpose
+
+- Build **new financial tools** and extend existing ones while **reusing current architecture and patterns**.
+- Keep calculation logic **deterministic, pure, and reusable**, separate from React UI.
+- Ensure every tool remains **small, composable, and loggable** via existing ToolRun infrastructure.
+
+## Architectural Guardrails
+
+- **Do not modify locked contracts** from `CLAUDE.md` or `Architecture-Guard.mdc`:
+  - Route groups `(light)`, `(dark)`, and `_shell` must remain unchanged.
+  - Auth cookie and JWT handling (`takhmino_auth`, `lib/auth/*`, `middleware.ts`) must not be altered.
+  - API routes `/api/auth/*` and `/api/tool-runs` contracts (shape, semantics, and auth expectations) must not be changed.
+- **Follow Next.js App Router best practices** and keep the existing folder structure unless the user explicitly approves a structural change.
+- Respect **server/client separation**:
+  - Client components (`"use client"`) must not import Node-only modules, Prisma, or auth/JWT utilities.
+  - All DB, JWT, and sensitive logic must stay in server components or server utilities.
+
+## Tool Design Principles
+
+- **Placement**:
+  - New tools live under the existing public tools patterns (for example `app/(public)/tools/...` and `public/tools/...`), mirroring current tools.
+- **Logic vs UI**:
+  - Keep React components thin: mainly inputs, outputs, and formatting.
+  - Move calculation logic into **shared, pure modules** (e.g. `lib/tools/*` or colocated non-React modules) for reuse and testing.
+- **ToolRun logging**:
+  - Integrate with existing `/api/tool-runs` utilities instead of introducing alternate logging paths or schemas.
+- **Auth boundaries**:
+  - Tools must never read or manipulate JWTs directly on the client.
+  - Any auth-aware behavior should go through existing `lib/auth/*` server utilities.
+
+## UX, SEO, and Scalability
+
+- **UX & Layout**:
+  - Reuse existing layouts, typography, theming, and shared components instead of introducing one-off shells.
+  - Preserve RTL layout and Persian UI conventions already established in the app.
+- **Metadata / SEO**:
+  - Each new tool page should define appropriate metadata (title, description, canonical URL) using the current Next.js metadata patterns.
+- **Scalability / No structural drift**:
+  - Prefer extracting shared calculation utilities over copy-paste.
+  - Avoid creating new top-level route groups when a tool fits within the existing structure.
+  - When a change might be architectural, describe impact and trade-offs and wait for explicit user approval before proceeding.
