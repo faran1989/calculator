@@ -9,7 +9,7 @@ Takhmino has a **locked architecture**. These rules protect long‑term stabilit
 
 ## Locked Contracts (must not change)
 
-- **Route groups**: `app/(light)/`, `app/(dark)/`, and `app/_shell/` are stable groups and **must not be renamed, removed, or merged** without explicit approval.
+- **Route groups**: Route groups (public/auth) are locked and must not change without explicit approval.
 - **Auth flow**:
   - Auth is based on a **JWT in HttpOnly cookie** `takhmino_auth` (HS256 via `lib/auth/jwt.ts`).
   - Only server-side auth utilities (`lib/auth/*`, `middleware.ts`) may **read/verify/sign** JWTs or touch the cookie.
@@ -51,7 +51,7 @@ Takhmino has a **locked architecture**. These rules protect long‑term stabilit
 ## Change Process
 
 - If a change touches:
-  - route groups `(light)/(dark)/_shell`,
+  - route groups `(public)/(auth)/_shell`,
   - auth cookie / JWT handling,
   - `/api/auth/*` or `/api/tool-runs` contracts,
   - or the Prisma schema,
